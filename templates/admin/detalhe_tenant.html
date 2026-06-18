@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ tenant.nome }} — Admin{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('admin.index') }}" class="bc-item">Admin</a>
+<span class="bc-sep">›</span><span class="bc-item active">{{ tenant.nome }}</span>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>{{ tenant.nome }}</h2>
+    <small class="text-muted">{{ tenant.slug }} · {{ tenant.email_admin }}</small>
+  </div>
+  <div style="display:flex;gap:.5rem">
+    {% if tenant.status != 'suspended' %}
+    <a href="{{ url_for('admin.alterar_status', tenant_id=tenant.id, acao='suspender') }}" class="btn btn-danger" onclick="return confirm('Suspender este cliente?')">Suspender</a>
+    {% else %}
+    <a href="{{ url_for('admin.alterar_status', tenant_id=tenant.id, acao='reativar') }}" class="btn btn-primary">Reativar</a>
+    {% endif %}
+  </div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Status</div><div class="kpi-value" style="font-size:16px">{{ tenant.status|capitalize }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Usuários</div><div class="kpi-value">{{ usuarios|length }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Projetos</div><div class="kpi-value">{{ projetos|length }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Assentos</div><div class="kpi-value">{{ tenant.assentos_contratados }}</div></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>Usuários</h3></div>
+    <table class="table">
+      <thead><tr><th>Nome</th><th>Role</th><th class="text-right">Login</th></tr></thead>
+      <tbody>
+        {% for u in usuarios %}
+        <tr>
+          <td><div>{{ u.nome }}</div><div style="font-size:11px;color:#64748B">{{ u.email }}</div></td>
+          <td><span class="chip chip-ok">{{ u.role }}</span></td>
+          <td class="text-right text-muted">{{ u.ultimo_login.strftime('%d/%m/%Y') if u.ultimo_login else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Projetos</h3></div>
+    <table class="table">
+      <thead><tr><th>Nome</th><th>Domínio</th></tr></thead>
+      <tbody>
+        {% for p in projetos %}
+        <tr><td>{{ p.nome }}</td><td class="text-muted" style="font-size:12px">{{ p.dominio }}</td></tr>
+        {% else %}
+        <tr><td colspan="2" class="text-muted text-center" style="padding:1rem">Nenhum projeto.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% if uso %}
+<div class="card">
+  <div class="card-header"><h3>Histórico de uso</h3></div>
+  <table class="table">
+    <thead><tr><th>Mês</th><th class="text-right">Assentos</th><th class="text-right">Projetos</th><th class="text-right">Keywords</th></tr></thead>
+    <tbody>
+      {% for u in uso %}
+      <tr>
+        <td>{{ u.mes_ref }}</td>
+        <td class="text-right">{{ u.assentos_ativos }}</td>
+        <td class="text-right">{{ u.projetos_ativos }}</td>
+        <td class="text-right">{{ u.keywords_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

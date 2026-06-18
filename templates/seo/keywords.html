@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Keywords — {{ projeto.nome }}{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('seo.painel', projeto_id=projeto.id) }}" class="bc-item">{{ projeto.nome }}</a>
+<span class="bc-sep">›</span><span class="bc-item active">Keywords</span>
+{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Keywords Monitoradas</h2></div>
+<div class="card card-sm">
+  <form method="POST" action="{{ url_for('seo.adicionar_keyword', projeto_id=projeto.id) }}" class="form-inline">
+    <input type="text" name="termo" placeholder="ex: contabilidade digital para PJ" class="input-main" required>
+    <button type="submit" class="btn btn-primary">+ Adicionar</button>
+  </form>
+</div>
+<div class="card">
+  <table class="table">
+    <thead><tr><th>#</th><th>Keyword</th><th class="text-right">Posição</th><th class="text-right">URL</th><th class="text-right">Coleta</th><th class="text-right">Ações</th></tr></thead>
+    <tbody>
+      {% for kw in keywords %}
+      <tr>
+        <td class="text-muted">{{ loop.index }}</td>
+        <td><strong>{{ kw.termo }}</strong></td>
+        <td class="text-right">
+          {% if kw.posicao %}<span class="pos-badge pos-{{ 'top3' if kw.posicao<=3 else 'top10' if kw.posicao<=10 else 'low' }}">#{{ kw.posicao }}</span>
+          {% else %}<span class="text-muted">Não ranqueando</span>{% endif %}
+        </td>
+        <td class="text-right td-url text-muted">
+          {% if kw.url_ranqueada %}<a href="{{ kw.url_ranqueada }}" target="_blank" style="font-size:11px">{{ kw.url_ranqueada|truncate(40) }}</a>{% else %}—{% endif %}
+        </td>
+        <td class="text-right text-muted">{{ kw.data_coleta or '—' }}</td>
+        <td class="text-right">
+          <a href="{{ url_for('seo.remover_keyword', projeto_id=projeto.id, kw_id=kw.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Remover?')">✕</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-center text-muted" style="padding:2rem">Nenhuma keyword cadastrada. Adicione acima.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

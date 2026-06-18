@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Bem-vindo{% endblock %}
+{% block content %}
+<div class="empty-center">
+  <div class="empty-icon">📡</div>
+  <h2>Bem-vindo ao Selenio Analytics</h2>
+  <p class="text-muted">Crie seu primeiro projeto para começar a monitorar SEO.</p>
+  <a href="{{ url_for('dashboard.novo_projeto') }}" class="btn btn-primary">+ Criar Projeto</a>
+</div>
+{% endblock %}

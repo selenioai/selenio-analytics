@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Selenio Analytics</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand-icon lg">S</div>
+      <h1>Selenio Analytics</h1>
+      <p>Monitoramento de SEO e Mídias Sociais</p>
+    </div>
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" name="email" required autofocus placeholder="seu@email.com">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" name="senha" required placeholder="••••••••">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+    </form>
+    <div style="text-align:center;margin-top:1rem;font-size:13px;color:#64748B">
+      Não tem conta? <a href="{{ url_for('registro') }}">Criar conta grátis</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

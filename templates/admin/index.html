@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Super Admin{% endblock %}
+{% block breadcrumb %}<span class="bc-item active">Painel Super Admin</span>{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Painel Super Admin</h2>
+  <a href="{{ url_for('admin.novo_tenant') }}" class="btn btn-primary">+ Novo Cliente</a>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Total de clientes</div><div class="kpi-value">{{ stats.total_tenants or 0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Total de usuários</div><div class="kpi-value">{{ stats.total_usuarios or 0 }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">MRR estimado</div><div class="kpi-value" style="font-size:18px">{{ (stats.mrr or 0)|format_currency }}</div></div>
+</div>
+<div class="card">
+  <div class="card-header"><h3>Clientes</h3></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Slug</th><th>Plano</th><th class="text-right">Usuários</th><th class="text-right">Projetos</th><th>Status</th><th class="text-right">Criado em</th><th></th></tr></thead>
+    <tbody>
+      {% for t in tenants %}
+      <tr>
+        <td><strong>{{ t.nome }}</strong></td>
+        <td class="text-muted">{{ t.slug }}</td>
+        <td><span class="chip chip-ok">{{ t.plano_nome }}</span></td>
+        <td class="text-right">{{ t.total_usuarios }}</td>
+        <td class="text-right">{{ t.total_projetos }}</td>
+        <td>
+          {% if t.status == 'active' %}<span class="chip chip-ok">Ativo</span>
+          {% elif t.status == 'trial' %}<span class="chip" style="background:#EFF6FF;color:#1D4ED8">Trial</span>
+          {% else %}<span class="chip chip-fail">{{ t.status }}</span>{% endif %}
+        </td>
+        <td class="text-right text-muted">{{ t.datestamp_insert.strftime('%d/%m/%Y') if t.datestamp_insert else '—' }}</td>
+        <td><a href="{{ url_for('admin.detalhe_tenant', tenant_id=t.id) }}" class="btn btn-sm">Ver</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-muted text-center" style="padding:2rem">Nenhum cliente ainda.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}SEO — {{ projeto.nome }}{% endblock %}
+{% block breadcrumb %}
+<span class="bc-item">{{ projeto.nome }}</span>
+<span class="bc-sep">›</span>
+<span class="bc-item active">Painel SEO</span>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>{{ projeto.nome }}</h2>
+    <small class="text-muted">{{ projeto.dominio }}</small>
+  </div>
+  <form method="POST" action="{{ url_for('seo.coletar_agora', projeto_id=projeto.id) }}">
+    <button type="submit" class="btn btn-primary">▶ Coletar agora</button>
+  </form>
+</div>
+{% if alertas %}
+<div class="alertas-bar">
+  {% for a in alertas %}<div class="alerta-item">⚠ {{ a.mensagem }}</div>{% endfor %}
+</div>
+{% endif %}
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Cliques (28d)</div><div class="kpi-value">{{ (resumo.total_cliques or 0)|int|format_number }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Impressões (28d)</div><div class="kpi-value">{{ (resumo.total_impressoes or 0)|int|format_number }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">CTR Médio</div><div class="kpi-value">{{ "%.1f"|format((resumo.ctr_medio or 0)*100) }}%</div></div>
+  <div class="kpi-card"><div class="kpi-label">Posição Média</div><div class="kpi-value">{{ "%.1f"|format(resumo.posicao_media or 0) }}</div></div>
+</div>
+<div class="card">
+  <div class="card-header"><h3>Cliques Orgânicos — últimos 28 dias</h3></div>
+  <div class="chart-wrap"><canvas id="chartGsc"></canvas></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>Top Queries (GSC)</h3></div>
+    <table class="table">
+      <thead><tr><th>Keyword</th><th class="text-right">Cliques</th><th class="text-right">Pos.</th></tr></thead>
+      <tbody>
+        {% for q in top_queries %}
+        <tr>
+          <td class="td-url">{{ q.query }}</td>
+          <td class="text-right">{{ q.cliques }}</td>
+          <td class="text-right"><span class="pos-badge pos-{{ 'top3' if q.posicao<=3 else 'top10' if q.posicao<=10 else 'low' }}">#{{ "%.0f"|format(q.posicao) }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-muted text-center" style="padding:2rem">Conecte o Google Search Console para ver dados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <h3>Keywords Monitoradas</h3>
+      <a href="{{ url_for('seo.keywords', projeto_id=projeto.id) }}" class="btn btn-sm">Gerenciar</a>
+    </div>
+    <table class="table">
+      <thead><tr><th>Keyword</th><th class="text-right">Posição</th><th class="text-right">Coleta</th></tr></thead>
+      <tbody>
+        {% for kw in keywords[:10] %}
+        <tr>
+          <td>{{ kw.termo }}</td>
+          <td class="text-right">
+            {% if kw.posicao %}<span class="pos-badge pos-{{ 'top3' if kw.posicao<=3 else 'top10' if kw.posicao<=10 else 'low' }}">#{{ kw.posicao }}</span>
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="text-right text-muted">{{ kw.data_coleta or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-muted text-center" style="padding:2rem">Nenhuma keyword cadastrada.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <h3>Últimas Auditorias</h3>
+    <a href="{{ url_for('seo.auditoria', projeto_id=projeto.id) }}" class="btn btn-sm">Ver todas</a>
+  </div>
+  <table class="table">
+    <thead><tr><th>URL</th><th class="text-right">Score</th><th class="text-right">Schema</th><th class="text-right">OG</th><th class="text-right">Data</th></tr></thead>
+    <tbody>
+      {% for a in audits %}
+      <tr>
+        <td class="td-url">{{ a.url }}</td>
+        <td class="text-right"><span class="score-badge score-{{ 'green' if a.score>=70 else 'yellow' if a.score>=40 else 'red' }}">{{ a.score }}</span></td>
+        <td class="text-right">{{ '✓' if a.tem_schema else '✗' }}</td>
+        <td class="text-right">{{ '✓' if a.tem_og else '✗' }}</td>
+        <td class="text-right text-muted">{{ a.data_auditoria }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="text-muted text-center" style="padding:2rem">Nenhuma auditoria ainda. <a href="{{ url_for('seo.auditoria', projeto_id=projeto.id) }}">Rodar agora</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+new Chart(document.getElementById('chartGsc'),{type:'line',data:{labels:{{ tend_labels|tojson }},datasets:[{label:'Cliques',data:{{ tend_cliques|tojson }},borderColor:'#1E90FF',backgroundColor:'rgba(30,144,255,0.08)',borderWidth:2,pointRadius:3,tension:0.35,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8}},y:{beginAtZero:true}}}});
+</script>
+{% endblock %}

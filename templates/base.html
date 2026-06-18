@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Selenio Analytics{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">S</span>
+    <span class="brand-name">Selenio Analytics</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint and request.endpoint.startswith('dashboard') %}active{% endif %}">
+      <span class="nav-icon">⊞</span> Projetos
+    </a>
+    {% if projeto is defined and projeto %}
+    <div class="nav-section">SEO</div>
+    <a href="{{ url_for('seo.painel', projeto_id=projeto.id) }}" class="nav-item {% if request.endpoint == 'seo.painel' %}active{% endif %}">
+      <span class="nav-icon">📊</span> Painel SEO
+    </a>
+    <a href="{{ url_for('seo.keywords', projeto_id=projeto.id) }}" class="nav-item {% if 'keyword' in (request.endpoint or '') %}active{% endif %}">
+      <span class="nav-icon">🔑</span> Keywords
+    </a>
+    <a href="{{ url_for('seo.auditoria', projeto_id=projeto.id) }}" class="nav-item {% if 'auditoria' in (request.endpoint or '') %}active{% endif %}">
+      <span class="nav-icon">🔍</span> Auditoria
+    </a>
+    <a href="{{ url_for('seo.gaps', projeto_id=projeto.id) }}" class="nav-item {% if 'gaps' in (request.endpoint or '') %}active{% endif %}">
+      <span class="nav-icon">⚡</span> Concorrentes
+    </a>
+    {% endif %}
+    {% if current_user.is_owner %}
+    <div class="nav-section">Conta</div>
+    <a href="{{ url_for('billing.index') }}" class="nav-item {% if request.endpoint and request.endpoint.startswith('billing') %}active{% endif %}">
+      <span class="nav-icon">👥</span> Usuários e Plano
+    </a>
+    {% endif %}
+    {% if current_user.is_superadmin %}
+    <div class="nav-section">Admin</div>
+    <a href="{{ url_for('admin.index') }}" class="nav-item {% if request.endpoint and request.endpoint.startswith('admin') %}active{% endif %}">
+      <span class="nav-icon">🛡</span> Painel Admin
+    </a>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">
+    <span>{{ current_user.nome }}</span>
+    <a href="{{ url_for('logout') }}" class="btn-logout">Sair</a>
+  </div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-left">{% block breadcrumb %}{% endblock %}</div>
+    <div class="topbar-right">
+      {% if total_alertas > 0 %}
+      <span class="badge-alert">{{ total_alertas }} alerta(s)</span>
+      {% endif %}
+      <button onclick="toggleTheme()" class="btn-theme">◐</button>
+    </div>
+  </header>
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+    <div class="flash flash-{{ cat }}" style="margin:1rem 1.5rem 0">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+  <div class="content">{% block content %}{% endblock %}</div>
+</main>
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

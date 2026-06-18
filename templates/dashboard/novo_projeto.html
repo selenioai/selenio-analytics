@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Novo Projeto{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Novo Projeto</h2></div>
+<div class="card card-sm" style="max-width:640px">
+  <form method="POST" action="{{ url_for('dashboard.novo_projeto') }}">
+    <div class="form-section">Informações básicas</div>
+    <div class="field"><label>Nome *</label><input type="text" name="nome" required placeholder="Minha Empresa"></div>
+    <div class="field"><label>Domínio *</label><input type="url" name="dominio" required placeholder="https://minhaempresa.com.br"></div>
+    <div class="form-section">Google</div>
+    <div class="field"><label>GSC Site URL</label><input type="text" name="gsc_site_url" placeholder="https://minhaempresa.com.br/"><span class="help">URL exata como no Google Search Console</span></div>
+    <div class="field"><label>GA4 Property ID</label><input type="text" name="ga4_property_id" placeholder="123456789"></div>
+    <div class="form-section">Redes Sociais</div>
+    <div class="field"><label>Meta Page ID (Facebook/Instagram)</label><input type="text" name="meta_page_id" placeholder="123456789012345"></div>
+    <div class="field"><label>LinkedIn Organization ID</label><input type="text" name="linkedin_org_id" placeholder="12345678"></div>
+    <div style="margin-top:1.5rem;display:flex;gap:.75rem">
+      <button type="submit" class="btn btn-primary">Criar Projeto</button>
+      <a href="{{ url_for('dashboard.index') }}" class="btn">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

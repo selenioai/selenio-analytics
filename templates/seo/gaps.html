@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Concorrentes — {{ projeto.nome }}{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('seo.painel', projeto_id=projeto.id) }}" class="bc-item">{{ projeto.nome }}</a>
+<span class="bc-sep">›</span><span class="bc-item active">Concorrentes</span>
+{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Análise de Concorrentes</h2></div>
+<div class="card card-sm">
+  <form method="POST" action="{{ url_for('seo.adicionar_concorrente', projeto_id=projeto.id) }}" class="form-inline">
+    <input type="text" name="nome" placeholder="Nome do concorrente" class="input-main" required>
+    <input type="url" name="dominio" placeholder="https://concorrente.com.br" class="input-main" required>
+    <button type="submit" class="btn btn-primary">+ Adicionar</button>
+  </form>
+</div>
+{% if concorrentes %}
+<div class="card">
+  <div class="card-header"><h3>Concorrentes monitorados</h3></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>Domínio</th></tr></thead>
+    <tbody>
+      {% for c in concorrentes %}
+      <tr><td>{{ c.nome }}</td><td class="text-muted">{{ c.dominio }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+<div class="card">
+  <div class="card-header"><h3>Keywords onde concorrentes ranqueiam — você não</h3></div>
+  {% if gaps %}
+  <table class="table">
+    <thead><tr><th>Keyword</th><th>Concorrente</th><th class="text-right">Pos. deles</th><th class="text-right">Sua pos.</th></tr></thead>
+    <tbody>
+      {% for g in gaps %}
+      <tr>
+        <td>{{ g.termo }}</td>
+        <td class="text-muted">{{ g.concorrente }}</td>
+        <td class="text-right"><span class="pos-badge pos-{{ 'top3' if g.pos_concorrente<=3 else 'top10' if g.pos_concorrente<=10 else 'low' }}">#{{ g.pos_concorrente }}</span></td>
+        <td class="text-right text-muted">{{ '#'+g.nossa_posicao|string if g.nossa_posicao else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">Nenhum gap identificado ainda. Adicione concorrentes e rode a coleta.</div>
+  {% endif %}
+</div>
+{% endblock %}

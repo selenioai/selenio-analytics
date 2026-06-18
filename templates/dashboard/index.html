@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Projetos — Selenio Analytics{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>Meus Projetos</h2>
+  <a href="{{ url_for('dashboard.novo_projeto') }}" class="btn btn-primary">+ Novo Projeto</a>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem">
+  {% for p in projetos %}
+  <a href="{{ url_for('seo.painel', projeto_id=p.id) }}" style="text-decoration:none">
+    <div class="card card-sm" style="cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#1E90FF'" onmouseout="this.style.borderColor='#E2E8F0'">
+      <div style="font-weight:600;font-size:15px;color:#1E293B;margin-bottom:.25rem">{{ p.nome }}</div>
+      <div style="font-size:12px;color:#64748B">{{ p.dominio }}</div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

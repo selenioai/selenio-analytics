@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Usuários e Plano{% endblock %}
+{% block breadcrumb %}<span class="bc-item active">Usuários e Plano</span>{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Usuários e Assentos</h2></div>
+
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kpi-label">Assentos usados</div><div class="kpi-value">{{ assentos_usados }}/{{ assentos_total }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Plano atual</div><div class="kpi-value" style="font-size:16px">{{ plano.nome|capitalize if plano else '—' }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Custo mensal estimado</div><div class="kpi-value" style="font-size:18px">{{ custo_atual|format_currency }}</div></div>
+  <div class="kpi-card"><div class="kpi-label">Preço por assento</div><div class="kpi-value" style="font-size:18px">{{ plano.preco_por_assento|format_currency if plano else '—' }}</div></div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Convidar usuário</h3>
+  </div>
+  <div class="card-sm">
+    <form method="POST" action="{{ url_for('billing.convidar') }}" class="form-inline">
+      <input type="email" name="email" placeholder="email@empresa.com" class="input-main" required>
+      <select name="role" style="padding:.5rem .75rem;border:1px solid #E2E8F0;border-radius:8px;background:#fff">
+        <option value="member">Membro</option>
+        <option value="admin">Admin</option>
+        <option value="viewer">Visualizador</option>
+      </select>
+      <button type="submit" class="btn btn-primary">+ Convidar</button>
+    </form>
+  </div>
+</div>
+
+{% if convites %}
+<div class="card">
+  <div class="card-header"><h3>Convites pendentes</h3></div>
+  <table class="table">
+    <thead><tr><th>E-mail</th><th>Role</th><th class="text-right">Expira em</th></tr></thead>
+    <tbody>
+      {% for c in convites %}
+      <tr>
+        <td>{{ c.email }}</td>
+        <td><span class="chip chip-ok">{{ c.role }}</span></td>
+        <td class="text-right text-muted">{{ c.expira_em }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header"><h3>Usuários ativos</h3></div>
+  <table class="table">
+    <thead><tr><th>Nome</th><th>E-mail</th><th>Role</th><th class="text-right">Último login</th><th class="text-right">Ações</th></tr></thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr>
+        <td>{{ u.nome }}</td>
+        <td class="text-muted">{{ u.email }}</td>
+        <td>
+          {% if u.id != current_user.id %}
+          <form method="POST" action="{{ url_for('billing.alterar_role', user_id=u.id) }}" style="display:inline">
+            <select name="role" onchange="this.form.submit()" style="font-size:12px;padding:.2rem .4rem;border:1px solid #E2E8F0;border-radius:4px">
+              <option value="admin" {{ 'selected' if u.role=='admin' }}>Admin</option>
+              <option value="member" {{ 'selected' if u.role=='member' }}>Membro</option>
+              <option value="viewer" {{ 'selected' if u.role=='viewer' }}>Visualizador</option>
+            </select>
+          </form>
+          {% else %}
+          <span class="chip chip-ok">{{ u.role }} (você)</span>
+          {% endif %}
+        </td>
+        <td class="text-right text-muted">{{ u.ultimo_login or '—' }}</td>
+        <td class="text-right">
+          {% if u.id != current_user.id %}
+          <a href="{{ url_for('billing.remover_usuario', user_id=u.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Remover este usuário?')">Remover</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

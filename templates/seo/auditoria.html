@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Auditoria — {{ projeto.nome }}{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('seo.painel', projeto_id=projeto.id) }}" class="bc-item">{{ projeto.nome }}</a>
+<span class="bc-sep">›</span><span class="bc-item active">Auditoria</span>
+{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Auditoria SEO On-Page</h2></div>
+<div class="card card-sm">
+  <form method="POST" action="{{ url_for('seo.rodar_auditoria', projeto_id=projeto.id) }}" class="form-inline">
+    <input type="url" name="url" placeholder="https://exemplo.com.br/pagina/" class="input-main" required>
+    <button type="submit" class="btn btn-primary">🔍 Auditar URL</button>
+  </form>
+  <small class="text-muted" style="margin-top:.5rem;display:block">Analisa: title, meta description, H1, schema, open graph, canonical, alt text e HTTPS.</small>
+</div>
+<div class="card">
+  <div class="card-header"><h3>URLs Auditadas</h3></div>
+  {% for a in audits %}
+  <div class="audit-row">
+    <div class="audit-top">
+      <span class="score-badge score-{{ 'green' if a.score>=70 else 'yellow' if a.score>=40 else 'red' }}" style="font-size:18px;padding:.3rem .8rem">{{ a.score }}<small>/100</small></span>
+      <div class="audit-url">
+        <strong>{{ a.url }}</strong>
+        <small class="text-muted">Auditado em {{ a.data_auditoria }}</small>
+      </div>
+      <div class="audit-chips">
+        <span class="chip {{ 'chip-ok' if a.tem_schema else 'chip-fail' }}">Schema</span>
+        <span class="chip {{ 'chip-ok' if a.tem_og else 'chip-fail' }}">Open Graph</span>
+      </div>
+    </div>
+    {% if a.issues_json %}
+    {% set issues = a.issues_json|from_json %}
+    {% if issues %}
+    <div class="audit-issues">
+      {% for issue in issues %}
+      <div class="issue issue-{{ issue.tipo }}">
+        <span class="issue-level">{{ issue.tipo|upper }}</span>{{ issue.msg }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-state">Nenhuma auditoria registrada. Insira uma URL acima.</div>
+  {% endfor %}
+</div>
+{% endblock %}

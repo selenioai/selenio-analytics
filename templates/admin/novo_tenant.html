@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Novo Cliente{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('admin.index') }}" class="bc-item">Admin</a>
+<span class="bc-sep">›</span><span class="bc-item active">Novo Cliente</span>
+{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Novo Cliente</h2></div>
+<div class="card card-sm" style="max-width:600px">
+  <form method="POST" action="{{ url_for('admin.novo_tenant') }}">
+    <div class="form-section">Empresa</div>
+    <div class="field"><label>Nome da empresa *</label><input type="text" name="nome" required placeholder="Agência XYZ"></div>
+    <div class="field"><label>Slug *</label><input type="text" name="slug" required placeholder="agencia-xyz"><span class="help">Identificador único, sem espaços ou acentos</span></div>
+    <div class="field">
+      <label>Plano *</label>
+      <select name="plano_id">
+        {% for p in planos %}<option value="{{ p.id }}">{{ p.nome|capitalize }} — R$ {{ "%.2f"|format(p.preco_por_assento) }}/usuário</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field"><label>Assentos contratados</label><input type="number" name="assentos" value="1" min="1"></div>
+    <div class="form-section">Administrador</div>
+    <div class="field"><label>Nome do admin *</label><input type="text" name="nome_admin" required placeholder="João Silva"></div>
+    <div class="field"><label>E-mail *</label><input type="email" name="email_admin" required placeholder="admin@agencia.com"></div>
+    <div class="field"><label>Senha inicial *</label><input type="password" name="senha" required placeholder="Mínimo 8 caracteres" minlength="8"></div>
+    <div style="margin-top:1.5rem;display:flex;gap:.75rem">
+      <button type="submit" class="btn btn-primary">Criar cliente</button>
+      <a href="{{ url_for('admin.index') }}" class="btn">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

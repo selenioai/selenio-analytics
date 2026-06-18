@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aceitar Convite — Selenio Analytics</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="brand-icon lg">S</div>
+      <h1>Você foi convidado</h1>
+      <p>Complete o cadastro para acessar o Selenio Analytics</p>
+    </div>
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+      <div class="flash flash-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <div class="field">
+        <label>Seu nome</label>
+        <input type="text" name="nome" required placeholder="João Silva">
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" value="{{ convite.email }}" disabled style="background:#F7F9FC;color:#64748B">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" name="senha" required placeholder="Mínimo 8 caracteres" minlength="8">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Criar conta e entrar</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>
