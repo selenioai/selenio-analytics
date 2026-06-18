@@ -280,3 +280,95 @@ CREATE TABLE IF NOT EXISTS uso_mensal (
     datestamp_update    TIMESTAMP,
     UNIQUE(tenant_id, mes_ref)
 );
+
+-- ═══════════════════════════════════════════════════════════════
+--  v1.1.0 — Sistema de Permissões + Configurações + APIs Sociais
+-- ═══════════════════════════════════════════════════════════════
+
+-- ── Telas / Recursos do sistema ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS telas (
+    id                  SERIAL PRIMARY KEY,
+    codigo              VARCHAR(100)  NOT NULL UNIQUE,
+    nome                VARCHAR(200)  NOT NULL,
+    descricao           TEXT,
+    modulo              VARCHAR(100),
+    icone               VARCHAR(50)   DEFAULT '📄',
+    ativo               SMALLINT      DEFAULT 1,
+    ordem               SMALLINT      DEFAULT 0,
+    datestamp_insert    TIMESTAMP     DEFAULT NOW()
+);
+
+-- ── Permissões por role + tela ───────────────────────────────────
+CREATE TABLE IF NOT EXISTS permissoes (
+    id                  SERIAL PRIMARY KEY,
+    tenant_id           INTEGER       REFERENCES tenants(id) NOT NULL,
+    role                VARCHAR(20)   NOT NULL,
+    tela_codigo         VARCHAR(100)  NOT NULL,
+    pode_ver            SMALLINT      DEFAULT 0,
+    pode_editar         SMALLINT      DEFAULT 0,
+    pode_criar          SMALLINT      DEFAULT 0,
+    pode_deletar        SMALLINT      DEFAULT 0,
+    datestamp_insert    TIMESTAMP     DEFAULT NOW(),
+    datestamp_update    TIMESTAMP,
+    UNIQUE(tenant_id, role, tela_codigo)
+);
+
+CREATE INDEX IF NOT EXISTS idx_permissoes_tenant_role
+    ON permissoes(tenant_id, role);
+
+-- ── Configurações gerais por tenant ──────────────────────────────
+CREATE TABLE IF NOT EXISTS configuracoes (
+    id                  SERIAL PRIMARY KEY,
+    tenant_id           INTEGER       REFERENCES tenants(id) NOT NULL UNIQUE,
+    timezone            VARCHAR(50)   DEFAULT 'America/Sao_Paulo',
+    idioma              VARCHAR(10)   DEFAULT 'pt-BR',
+    notif_email         SMALLINT      DEFAULT 1,
+    notif_alertas       SMALLINT      DEFAULT 1,
+    coleta_hora         SMALLINT      DEFAULT 6,
+    datestamp_insert    TIMESTAMP     DEFAULT NOW(),
+    datestamp_update    TIMESTAMP
+);
+
+-- ── Integrações de APIs sociais ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS api_integracoes (
+    id                  SERIAL PRIMARY KEY,
+    tenant_id           INTEGER       REFERENCES tenants(id) NOT NULL,
+    projeto_id          INTEGER       REFERENCES projetos(id),
+    provedor            VARCHAR(50)   NOT NULL,
+    nome_exibicao       VARCHAR(200),
+    status              VARCHAR(20)   DEFAULT 'pendente',
+    access_token        TEXT,
+    refresh_token       TEXT,
+    token_expires_at    TIMESTAMP,
+    token_scope         TEXT,
+    account_id          VARCHAR(200),
+    account_name        VARCHAR(200),
+    account_avatar_url  VARCHAR(500),
+    meta_dados          TEXT,
+    ultimo_sync         TIMESTAMP,
+    erro_mensagem       TEXT,
+    ativo               SMALLINT      DEFAULT 1,
+    D_E_L_E_T           SMALLINT      DEFAULT 0,
+    criado_por          INTEGER       REFERENCES usuarios(id),
+    datestamp_insert    TIMESTAMP     DEFAULT NOW(),
+    datestamp_update    TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_integracoes_tenant
+    ON api_integracoes(tenant_id, provedor);
+
+-- ── Logs de coleta ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS api_logs (
+    id                  SERIAL PRIMARY KEY,
+    tenant_id           INTEGER       REFERENCES tenants(id) NOT NULL,
+    integracao_id       INTEGER       REFERENCES api_integracoes(id),
+    tipo                VARCHAR(50),
+    status              VARCHAR(20),
+    mensagem            TEXT,
+    registros_coletados INTEGER       DEFAULT 0,
+    duracao_ms          INTEGER,
+    datestamp_insert    TIMESTAMP     DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_logs_integracao
+    ON api_logs(integracao_id, datestamp_insert DESC);

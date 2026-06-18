@@ -106,3 +106,133 @@ input,select,textarea,button{font-family:inherit;font-size:14px}
 .issue-low .issue-level{background:#F0FDF4;color:#166534}
 .alertas-bar{background:#FEF3C7;border:1px solid #FDE68A;border-radius:var(--radius);padding:.75rem 1rem;margin-bottom:1.25rem}
 .alerta-item{font-size:13px;color:#92400E}
+/* ── Adições ao style.css — Nav Groups + Social APIs ── */
+
+/* Nav group (menu com submenus) */
+.nav-group { display: flex; flex-direction: column; }
+
+.nav-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem 1rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  width: 100%;
+  text-align: left;
+  transition: background .15s, color .15s;
+}
+.nav-group-toggle:hover { background: var(--bg); color: var(--text); }
+.nav-group-toggle.active { color: var(--accent); font-weight: 600; }
+
+.nav-chevron {
+  margin-left: auto;
+  font-size: 16px;
+  transition: transform .2s;
+  color: var(--muted);
+}
+
+.nav-group-items {
+  display: none;
+  flex-direction: column;
+  background: rgba(0,0,0,.02);
+}
+.nav-group-items.open { display: flex; }
+
+.nav-sub {
+  padding-left: 2rem !important;
+  font-size: 13px;
+}
+
+/* Provider cards */
+.providers-grid { display: flex; flex-direction: column; gap: 1rem; }
+
+.provider-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: box-shadow .15s;
+}
+.provider-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.provider-active     { border-color: #86EFAC; }
+
+.provider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--bg);
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+.provider-info  { display: flex; align-items: center; gap: .75rem; }
+.provider-icons { font-size: 22px; }
+.provider-name  { font-weight: 600; font-size: 14px; color: var(--text); }
+.provider-desc  { font-size: 12px; color: var(--muted); margin-top: .15rem; }
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: .2rem .6rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.status-ok       { background: #DCFCE7; color: #166534; }
+.status-ativo    { background: #DCFCE7; color: #166534; }
+.status-pendente { background: #FEF9C3; color: #854D0E; }
+.status-erro     { background: #FEE2E2; color: #991B1B; }
+.status-expirado { background: #FEE2E2; color: #991B1B; }
+
+.provider-accounts  { border-top: 1px solid var(--border); padding: .5rem 0; }
+
+.account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .6rem 1.25rem;
+  transition: background .1s;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.account-row:hover { background: var(--bg); }
+.account-info  { display: flex; align-items: center; gap: .75rem; }
+
+.account-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+.account-avatar-placeholder {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.account-name { font-weight: 500; font-size: 13px; }
+.account-meta { font-size: 11px; color: var(--muted); margin-top: .1rem; }
+
+.provider-config {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem 1.25rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.config-form {
+  padding: 1rem 1.25rem;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}

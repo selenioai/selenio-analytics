@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Configurações Gerais{% endblock %}
+{% block breadcrumb %}
+<span class="bc-item">Configurações</span>
+<span class="bc-sep">›</span>
+<span class="bc-item active">Geral</span>
+{% endblock %}
+{% block content %}
+<div class="page-header"><h2>Configurações Gerais</h2></div>
+
+<div class="card card-sm" style="max-width:600px">
+  <form method="POST" action="{{ url_for('configuracoes.geral_salvar') }}">
+    <div class="form-section">Regionalização</div>
+    <div class="field">
+      <label>Fuso horário</label>
+      <select name="timezone">
+        <option value="America/Sao_Paulo" {{ 'selected' if config.timezone == 'America/Sao_Paulo' }}>
+          America/Sao_Paulo (BRT, UTC-3)
+        </option>
+        <option value="America/Manaus" {{ 'selected' if config.timezone == 'America/Manaus' }}>
+          America/Manaus (AMT, UTC-4)
+        </option>
+        <option value="America/Belem" {{ 'selected' if config.timezone == 'America/Belem' }}>
+          America/Belem (BRT, UTC-3)
+        </option>
+        <option value="UTC" {{ 'selected' if config.timezone == 'UTC' }}>UTC</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Idioma</label>
+      <select name="idioma">
+        <option value="pt-BR" {{ 'selected' if config.idioma == 'pt-BR' }}>Português (Brasil)</option>
+        <option value="en-US" {{ 'selected' if config.idioma == 'en-US' }}>English (US)</option>
+      </select>
+    </div>
+
+    <div class="form-section">Coletas automáticas</div>
+    <div class="field">
+      <label>Hora da coleta diária</label>
+      <select name="coleta_hora">
+        {% for h in range(0, 24) %}
+        <option value="{{ h }}" {{ 'selected' if config.coleta_hora == h }}>
+          {{ '%02d:00'|format(h) }}
+        </option>
+        {% endfor %}
+      </select>
+      <span class="help">Horário em que o sistema coleta dados das APIs automaticamente</span>
+    </div>
+
+    <div class="form-section">Notificações</div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer">
+        <input type="checkbox" name="notif_email"
+               {{ 'checked' if config.notif_email }}
+               style="width:auto;accent-color:var(--accent)">
+        <div>
+          <div style="font-size:13px;font-weight:500">Notificações por e-mail</div>
+          <div class="help" style="margin:0">Receba alertas e relatórios por e-mail</div>
+        </div>
+      </label>
+      <label style="display:flex;align-items:center;gap:.75rem;cursor:pointer">
+        <input type="checkbox" name="notif_alertas"
+               {{ 'checked' if config.notif_alertas }}
+               style="width:auto;accent-color:var(--accent)">
+        <div>
+          <div style="font-size:13px;font-weight:500">Alertas no painel</div>
+          <div class="help" style="margin:0">Exibir alertas quando métricas caírem</div>
+        </div>
+      </label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Salvar configurações</button>
+  </form>
+</div>
+{% endblock %}

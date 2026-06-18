@@ -41,15 +41,17 @@ with app.app_context():
         print(f"[DB] Aviso: {e}")
 
 # ── Blueprints ────────────────────────────────────────────────
-from modules.dashboard import bp as bp_dash
-from modules.seo        import bp as bp_seo
-from modules.billing    import bp as bp_billing
-from modules.admin      import bp as bp_admin
+from modules.dashboard      import bp as bp_dash
+from modules.seo            import bp as bp_seo
+from modules.billing        import bp as bp_billing
+from modules.admin          import bp as bp_admin
+from modules.configuracoes  import bp as bp_config
 
 app.register_blueprint(bp_dash,    url_prefix="/dashboard")
 app.register_blueprint(bp_seo,     url_prefix="/seo")
 app.register_blueprint(bp_billing, url_prefix="/billing")
 app.register_blueprint(bp_admin,   url_prefix="/admin")
+app.register_blueprint(bp_config,  url_prefix="/configuracoes")
 
 # ── Middleware de tenant ──────────────────────────────────────
 from tenant_middleware import init_tenant_middleware
