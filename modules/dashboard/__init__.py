@@ -21,17 +21,18 @@ def index():
 def novo_projeto():
     tid = current_user.tenant_id
     if not db.dentro_do_limite(tid, "projetos"):
-        flash("Limite de projetos do plano atingido. Faça upgrade para adicionar mais.", "danger")
+        flash("Limite de projetos do plano atingido. Faça upgrade.", "danger")
         return redirect(url_for("dashboard.index"))
 
     if request.method == "POST":
         d = request.form
-        row = db.execute_t(tid, """
+        row = db.execute("""
             INSERT INTO projetos
                 (tenant_id, usuario_id, nome, dominio, gsc_site_url,
                  ga4_property_id, meta_page_id, linkedin_org_id)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s) RETURNING id
         """, (
+            tid,
             current_user.id,
             d.get("nome"), d.get("dominio"), d.get("gsc_site_url"),
             d.get("ga4_property_id"), d.get("meta_page_id"), d.get("linkedin_org_id"),
