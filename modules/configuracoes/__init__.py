@@ -74,6 +74,7 @@ PROVEDORES = {
         "cor":         "#1877F2",
         "descricao":   "Conecta Instagram Business e Facebook Page via Meta Graph API",
         "doc_url":     "https://developers.facebook.com/docs/graph-api",
+        "oauth_implementado": True,
         "requer_app":  True,
         "campos": [
             {"key": "app_id",     "label": "App ID",     "tipo": "text", "ajuda": "ID do App no Meta for Developers"},
@@ -86,6 +87,7 @@ PROVEDORES = {
         "cor":         "#0A66C2",
         "descricao":   "Conecta LinkedIn Company Page via LinkedIn Marketing API",
         "doc_url":     "https://learn.microsoft.com/en-us/linkedin/marketing/",
+        "oauth_implementado": True,
         "requer_app":  True,
         "campos": [
             {"key": "client_id",     "label": "Client ID",     "tipo": "text",     "ajuda": "Client ID do app no LinkedIn Developers"},
@@ -98,6 +100,7 @@ PROVEDORES = {
         "cor":         "#4285F4",
         "descricao":   "Conecta Google Search Console e Google Analytics 4",
         "doc_url":     "https://developers.google.com/webmaster-tools",
+        "em_breve": True,
         "requer_app":  True,
         "campos": [
             {"key": "client_id",     "label": "Client ID",     "tipo": "text",     "ajuda": "Client ID do projeto no Google Cloud Console"},
@@ -110,6 +113,7 @@ PROVEDORES = {
         "cor":         "#010101",
         "descricao":   "Conecta TikTok Business Account via TikTok for Business API",
         "doc_url":     "https://business-api.tiktok.com/",
+        "em_breve": True,
         "requer_app":  True,
         "campos": [
             {"key": "app_id",     "label": "App ID",     "tipo": "text",     "ajuda": "App ID no TikTok for Developers"},
@@ -122,6 +126,7 @@ PROVEDORES = {
         "cor":         "#000000",
         "descricao":   "Conecta conta X/Twitter via Twitter API v2",
         "doc_url":     "https://developer.twitter.com/en/docs",
+        "em_breve": True,
         "requer_app":  True,
         "campos": [
             {"key": "api_key",        "label": "API Key",        "tipo": "text",     "ajuda": "API Key do projeto no Twitter Developer Portal"},
