@@ -396,7 +396,7 @@ def linkedin_conectar(projeto_id):
     session["oauth_provedor"]   = "linkedin"
 
     redirect_uri = url_for("configuracoes.linkedin_callback", _external=True)
-    scope        = "r_organization_social,r_emailaddress,r_liteprofile"
+    scope        = "r_organization_social,r_liteprofile"
 
     auth_url = (
         f"https://www.linkedin.com/oauth/v2/authorization"
