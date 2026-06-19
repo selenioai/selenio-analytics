@@ -539,3 +539,13 @@ def status_integracoes():
            WHERE tenant_id=%s AND D_E_L_E_T=0 AND ativo=1
            ORDER BY provedor""")
     return jsonify([dict(r) for r in integracoes])
+
+@bp.route("/apis-sociais/meta/webhook-verify", methods=["GET"])
+def meta_webhook_verify():
+    import os
+    mode      = request.args.get("hub.mode")
+    token     = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
+    if mode == "subscribe" and token == os.getenv("META_VERIFY_TOKEN", "selenio2026"):
+        return challenge, 200
+    return "Forbidden", 403
