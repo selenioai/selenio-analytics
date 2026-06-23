@@ -227,7 +227,7 @@ def analisar_url(url):
 @login_required
 def index():
     tid = current_user.tenant_id
-    projetos = db.query("SELECT id, nome, url FROM projetos WHERE tenant_id=%s AND D_E_L_E_T=0 ORDER BY nome", (tid,))
+    projetos = db.query("SELECT id, nome FROM projetos WHERE tenant_id=%s AND D_E_L_E_T=0 ORDER BY nome", (tid,))
     return render_template("seo/index.html", projetos=projetos)
 
 
