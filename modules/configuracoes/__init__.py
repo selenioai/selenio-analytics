@@ -465,7 +465,16 @@ def linkedin_callback():
         orgs = resp2.json().get("elements", [])
 
         if not orgs:
-            flash("Nenhuma organização encontrada no LinkedIn.", "warning")
+            # Salva token mesmo sem organizações — aguardando aprovação Marketing Developer Platform
+            db.execute("""
+                INSERT INTO api_integracoes
+                    (tenant_id, projeto_id, provedor, nome_exibicao, status,
+                     access_token, token_expires_at, account_name, criado_por)
+                VALUES (%s,%s,'linkedin','LinkedIn — Pendente aprovação MDP','pendente',%s,%s,'Conta LinkedIn',%s)
+                ON CONFLICT DO NOTHING
+            """, (tid, projeto_id, access_token, expires_at, current_user.id))
+            _log(tid, None, "auth", "aviso", "Token LinkedIn salvo — aguardando aprovação Marketing Developer Platform")
+            flash("LinkedIn autenticado. Aguardando aprovação do Marketing Developer Platform para acessar dados da página.", "warning")
             return redirect(url_for("configuracoes.apis_sociais"))
 
         for org in orgs:
