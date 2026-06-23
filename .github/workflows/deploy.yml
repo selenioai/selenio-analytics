@@ -8,11 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 187.77.225.137
-          username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 2222
-          script: /root/deploy.sh
+      - name: Trigger deploy via webhook
+        run: |
+          echo "Deploy triggered by GitHub webhook automatically"
+          echo "Commit: ${{ github.sha }}"
