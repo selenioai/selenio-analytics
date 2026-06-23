@@ -1,9 +1,8 @@
-name: Deploy to VPS
+name: Deploy
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
@@ -15,14 +14,4 @@ jobs:
           host: 187.77.225.137
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            docker rm -f analytics-app
-            docker run -d \
-              --name analytics-app \
-              --restart unless-stopped \
-              --network easypanel \
-              --ip 10.11.0.100 \
-              --env-file /root/analytics/.env \
-              -e DB_HOST=172.18.0.1 \
-              easypanel/analytics/analytics
-            echo "Deploy concluido"
+          script: /root/deploy.sh
