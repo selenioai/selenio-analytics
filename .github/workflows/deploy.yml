@@ -14,4 +14,5 @@ jobs:
           host: 187.77.225.137
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
+          port: 2222
           script: /root/deploy.sh
