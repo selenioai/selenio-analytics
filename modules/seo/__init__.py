@@ -149,7 +149,7 @@ def analisar_url(url):
     pontos+=ck("Tamanho da description (120-160)",120<=desc_len<=160,3,f"{desc_len} chars — ideal",f"{desc_len} chars — {'curto' if desc_len<120 else 'longo'}","meta"); total+=3
     pontos+=ck("Charset definido",bool(charset),2,f"Charset: {charset}","Charset não declarado","meta"); total+=2
     pontos+=ck("Sem meta refresh",not bool(meta.get("refresh","")),1,"Sem meta refresh","Meta refresh detectado","meta"); total+=1
-    pontos+=ck("H1 único",h1c==1,8,f"H1: {headings.get('h1',[''])[0][:50]}",f"{'H1 ausente' if h1c==0 else f'{h1c} H1s (deve ter apenas 1)'}","headings"); total+=8
+    pontos+=ck("H1 único",h1c==1,8,f"H1: {headings['h1'][0][:50] if headings.get('h1') else '(ausente)'}",f"{'H1 ausente' if h1c==0 else f'{h1c} H1s (deve ter apenas 1)'}","headings"); total+=8
     pontos+=ck("H2s presentes",len(headings.get("h2",[]))>0,3,f"{len(headings.get('h2',[]))} H2(s)","Sem H2 — estrutura fraca","headings"); total+=3
     pontos+=ck("H3s presentes",len(headings.get("h3",[]))>0,1,f"{len(headings.get('h3',[]))} H3(s)","Sem H3","headings"); total+=1
     pontos+=ck("HTTPS ativo",url.startswith("https://"),10,"Site usa HTTPS — seguro","Site sem HTTPS — crítico","tecnico"); total+=10
