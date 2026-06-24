@@ -501,6 +501,11 @@ def config_salvar(projeto_id):
         return jsonify({"ok": False}), 403
 
     d = request.form
+    gsc_url = d.get("gsc_property_url") or None
+    if not gsc_url:
+        cfg_atual = db.query_one("SELECT gsc_property_url FROM keyword_fonte_config WHERE projeto_id=%s", (projeto_id,))
+        if cfg_atual:
+            gsc_url = cfg_atual["gsc_property_url"]
     db.execute(
         """UPDATE keyword_fonte_config
            SET fonte=%s,
@@ -512,7 +517,7 @@ def config_salvar(projeto_id):
            WHERE projeto_id=%s""",
         (
             d.get("fonte", "manual"),
-            d.get("gsc_property_url") or None,
+            gsc_url,
             d.get("dataforseo_login") or None,
             d.get("dataforseo_password") or None,
             d.get("scraping_pais", "br"),
