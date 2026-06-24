@@ -606,6 +606,28 @@ function renderTudo(d) {
     items.forEach((it, i) => { ul.appendChild(mkCheck(it, ok, ulId+'_'+i)); });
   };
   mkList('ul-fail', d.problemas, false);
+
+  // Delegação de eventos para tooltip nos itens
+  ['ul-fail','ul-warn','ul-ok'].forEach(ulId => {
+    const ul = document.getElementById(ulId);
+    ul.addEventListener('mouseover', function(e) {
+      const header = e.target.closest('.check-li-header');
+      if (!header) return;
+      const li = header.closest('.check-li');
+      if (!li) return;
+      const nome = li.querySelector('.check-li-nome')?.childNodes[0]?.textContent?.trim();
+      const ok = li.querySelector('.check-li-icon')?.textContent?.includes('✅');
+      if (nome) showTT(e, nome, ok);
+    });
+    ul.addEventListener('mousemove', moveTT);
+    ul.addEventListener('mouseleave', hideTT);
+    ul.addEventListener('click', function(e) {
+      const header = e.target.closest('.check-li-header');
+      if (!header) return;
+      const li = header.closest('.check-li');
+      if (li) li.classList.toggle('open');
+    });
+  });
   mkList('ul-warn', d.avisos, false);
   mkList('ul-ok', d.positivos, true);
 
