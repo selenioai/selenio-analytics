@@ -462,14 +462,14 @@ function hideTT() { ttTimer = setTimeout(() => { document.getElementById('seo-tt
 // ═══ MONTAR ITEM DE CHECK ═══
 function mkCheck(it, ok, uid) {
   const icon = ok ? '✅' : it.peso >= 7 ? '❌' : '⚠️';
-  const painel = mkPainel(it.nome);
+  const painel = mkPainel(it.item);
   const li = document.createElement('li');
   li.className = 'check-li';
   li.id = 'cli-' + uid;
   const header = document.createElement('div');
   header.className = 'check-li-header';
-  header.innerHTML = `<span class="check-li-icon">${icon}</span><div class="check-li-body"><div class="check-li-nome">${esc(it.nome)} <span class="info-dot">ℹ</span></div><div class="check-li-desc">${esc(it.desc)}</div></div>${painel ? '<span class="check-li-arrow">▶</span>' : ''}`;
-  header.addEventListener('mouseenter', (e) => showTT(e, it.nome, ok));
+  header.innerHTML = `<span class="check-li-icon">${icon}</span><div class="check-li-body"><div class="check-li-nome">${esc(it.item)} <span class="info-dot">ℹ</span></div><div class="check-li-desc">${esc(it.desc)}</div></div>${painel ? '<span class="check-li-arrow">▶</span>' : ''}`;
+  header.addEventListener('mouseenter', (e) => showTT(e, it.item, ok));
   header.addEventListener('mousemove', moveTT);
   header.addEventListener('mouseleave', hideTT);
   header.addEventListener('click', () => toggleLi(uid));
