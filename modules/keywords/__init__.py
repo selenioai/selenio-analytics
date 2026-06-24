@@ -33,9 +33,8 @@ def _get_projeto(projeto_id):
     """Retorna projeto verificando acesso do usuário."""
     return db.query_one(
         """SELECT p.* FROM projetos p
-           JOIN usuario_projetos up ON up.projeto_id = p.id
-           WHERE p.id = %s AND up.usuario_id = %s AND p.ativo = 1""",
-        (projeto_id, current_user.id)
+           WHERE p.id = %s AND p.tenant_id = %s AND p.D_E_L_E_T = 0""",
+        (projeto_id, current_user.tenant_id)
     )
 
 
