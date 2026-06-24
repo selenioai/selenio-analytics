@@ -2,10 +2,11 @@
 {% block title %}Análise SEO{% endblock %}
 {% block content %}
 <div class="seo-page">
+
   <div class="page-header">
-    <div class="page-header-left">
+    <div>
       <h1 class="page-title">🔍 Análise de SEO</h1>
-      <p class="page-subtitle">Auditoria completa on-page — meta tags, performance, schema, segurança e mais</p>
+      <p class="page-subtitle">Auditoria completa on-page — 35 checks, análise de IA e relatório exportável</p>
     </div>
     <a href="{{ url_for('seo.historico') }}" class="btn btn-outline">📋 Histórico</a>
   </div>
@@ -15,13 +16,13 @@
       <div class="seo-form-row">
         <div class="seo-form-url">
           <label>URL para analisar</label>
-          <div class="input-with-icon">
-            <span class="input-icon">🌐</span>
-            <input type="url" id="input-url" name="url" placeholder="https://www.seusite.com.br" class="form-input" required>
+          <div class="input-icon-wrap">
+            <span class="inp-icon">🌐</span>
+            <input type="url" id="input-url" name="url" placeholder="https://www.seusite.com.br" class="form-input" required style="padding-left:40px">
           </div>
         </div>
         {% if projetos %}
-        <div class="seo-form-projeto">
+        <div style="width:200px">
           <label>Projeto (opcional)</label>
           <select name="projeto_id" class="form-select">
             <option value="">Selecionar projeto</option>
@@ -29,613 +30,710 @@
           </select>
         </div>
         {% endif %}
-        <div class="seo-form-btn">
-          <label>&nbsp;</label>
-          <button type="submit" class="btn btn-primary btn-analisar" id="btn-analisar">
-            <span class="btn-text">🚀 Analisar</span>
-            <span class="btn-loading" style="display:none">⏳ Analisando...</span>
+        <div style="padding-top:22px">
+          <button type="submit" id="btn-analisar" class="btn btn-primary" style="padding:12px 28px;font-size:1rem;font-weight:700">
+            <span id="btn-txt">🚀 Analisar</span>
+            <span id="btn-load" style="display:none">⏳ Analisando...</span>
           </button>
         </div>
       </div>
     </form>
   </div>
 
-  <div id="seo-loading" style="display:none" class="seo-loading">
-    <div class="loading-spinner"></div>
-    <p>Analisando a página... Isso pode levar alguns segundos.</p>
+  <div id="seo-loading" style="display:none" class="loading-card">
+    <div class="loading-ring"></div>
+    <p style="margin:12px 0 16px;font-weight:600">Analisando a página...</p>
     <div class="loading-steps">
-      <span class="step active" id="step1">📡 Acessando URL</span>
-      <span class="step" id="step2">🔍 Analisando meta tags</span>
-      <span class="step" id="step3">⚡ Verificando performance</span>
-      <span class="step" id="step4">🛡️ Checando segurança</span>
-      <span class="step" id="step5">📊 Gerando relatório</span>
+      <span class="lstep active" id="ls1">📡 Acessando</span>
+      <span class="lstep" id="ls2">🔍 Meta tags</span>
+      <span class="lstep" id="ls3">⚡ Performance</span>
+      <span class="lstep" id="ls4">🛡️ Segurança</span>
+      <span class="lstep" id="ls5">🤖 Análise IA</span>
     </div>
   </div>
 
   <div id="seo-resultado" style="display:none">
-    <div class="score-section">
-      <div class="score-card">
-        <div class="score-circle">
+
+    <!-- SCORE -->
+    <div class="score-row">
+      <div class="score-main">
+        <div class="score-ring-wrap">
           <svg viewBox="0 0 120 120" class="score-svg">
-            <circle cx="60" cy="60" r="50" class="score-bg"/>
-            <circle cx="60" cy="60" r="50" class="score-progress" id="score-arc"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="10"/>
+            <circle cx="60" cy="60" r="52" fill="none" id="score-arc" stroke="#10b981" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1.2s ease,stroke .5s"/>
           </svg>
-          <div class="score-number" id="score-number">0</div>
-          <div class="score-label-txt">Score SEO</div>
+          <div class="score-center">
+            <div class="score-num" id="score-num">0</div>
+            <div class="score-lbl">Score SEO</div>
+          </div>
         </div>
-        <div class="score-meta">
+        <div class="score-info">
           <div class="score-url" id="score-url"></div>
-          <div class="score-time" id="score-time"></div>
-          <div class="score-status" id="score-status"></div>
-          <button class="btn btn-success btn-pdf" onclick="gerarPDF()">📄 Exportar PDF</button>
+          <div class="score-ts" id="score-ts"></div>
+          <div class="score-verdict" id="score-verdict"></div>
+          <button class="btn btn-success" onclick="gerarPDF()" style="margin-top:14px;padding:10px 20px">📄 Exportar PDF</button>
         </div>
       </div>
-      <div class="resumo-cards">
-        <div class="resumo-card bom"><div class="resumo-num" id="count-bom">0</div><div class="resumo-desc">✅ Itens OK</div></div>
-        <div class="resumo-card aviso"><div class="resumo-num" id="count-aviso">0</div><div class="resumo-desc">⚠️ Avisos</div></div>
-        <div class="resumo-card ruim"><div class="resumo-num" id="count-problema">0</div><div class="resumo-desc">❌ Problemas</div></div>
+      <div class="score-counters">
+        <div class="counter-box ok"><div class="counter-n" id="cnt-ok">0</div><div class="counter-l">✅ Itens OK</div></div>
+        <div class="counter-box warn"><div class="counter-n" id="cnt-warn">0</div><div class="counter-l">⚠️ Avisos</div></div>
+        <div class="counter-box fail"><div class="counter-n" id="cnt-fail">0</div><div class="counter-l">❌ Problemas</div></div>
       </div>
     </div>
 
-    <div class="seo-tabs">
-      <button class="tab-btn active" data-tab="overview">📊 Visão Geral</button>
-      <button class="tab-btn" data-tab="meta">🏷️ Meta Tags</button>
-      <button class="tab-btn" data-tab="conteudo">📝 Conteúdo</button>
-      <button class="tab-btn" data-tab="tecnico">⚙️ Técnico</button>
-      <button class="tab-btn" data-tab="performance">⚡ Performance</button>
-      <button class="tab-btn" data-tab="social">📱 Social</button>
-      <button class="tab-btn" data-tab="seguranca">🛡️ Segurança</button>
+    <!-- IA -->
+    <div id="ia-box" style="display:none" class="ia-box">
+      <div class="ia-header">🤖 Análise de IA — Recomendações Estratégicas</div>
+      <div class="ia-body" id="ia-body"></div>
     </div>
 
-    <div class="tab-content active" id="tab-overview">
-      <div class="section-grid">
-        <div class="info-card critico"><h3>❌ Problemas Críticos</h3><ul id="lista-problemas" class="check-list"></ul></div>
-        <div class="info-card aviso"><h3>⚠️ Avisos</h3><ul id="lista-avisos" class="check-list"></ul></div>
-        <div class="info-card positivo"><h3>✅ Itens OK</h3><ul id="lista-positivos" class="check-list"></ul></div>
-      </div>
+    <!-- TABS -->
+    <div class="tabs-nav">
+      <button class="tab active" data-tab="overview">📊 Visão Geral</button>
+      <button class="tab" data-tab="meta">🏷️ Meta Tags</button>
+      <button class="tab" data-tab="conteudo">📝 Conteúdo</button>
+      <button class="tab" data-tab="tecnico">⚙️ Técnico</button>
+      <button class="tab" data-tab="performance">⚡ Performance</button>
+      <button class="tab" data-tab="social">📱 Social</button>
+      <button class="tab" data-tab="seguranca">🛡️ Segurança</button>
     </div>
 
-    <div class="tab-content" id="tab-meta">
-      <div class="meta-grid">
-        <div class="meta-item">
-          <div class="meta-label">Title Tag</div>
-          <div class="meta-value" id="meta-title">—</div>
-          <div class="meta-bar-row"><div class="meta-bar-wrap"><div class="meta-bar" id="meta-title-bar"></div></div><span class="meta-chars" id="meta-title-chars">0 chars</span></div>
-          <div class="meta-status" id="meta-title-status"></div>
+    <!-- OVERVIEW -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="three-col">
+        <div class="check-col fail-col">
+          <div class="col-title">❌ Problemas Críticos</div>
+          <ul class="check-ul" id="ul-fail"></ul>
         </div>
-        <div class="meta-item">
-          <div class="meta-label">Meta Description</div>
-          <div class="meta-value" id="meta-desc">—</div>
-          <div class="meta-bar-row"><div class="meta-bar-wrap"><div class="meta-bar" id="meta-desc-bar"></div></div><span class="meta-chars" id="meta-desc-chars">0 chars</span></div>
-          <div class="meta-status" id="meta-desc-status"></div>
+        <div class="check-col warn-col">
+          <div class="col-title">⚠️ Avisos</div>
+          <ul class="check-ul" id="ul-warn"></ul>
         </div>
-        <div class="meta-row-small">
-          <div class="meta-small"><span class="label">Charset</span><span id="meta-charset">—</span></div>
-          <div class="meta-small"><span class="label">Viewport</span><span id="meta-viewport">—</span></div>
-          <div class="meta-small"><span class="label">Robots</span><span id="meta-robots">—</span></div>
-          <div class="meta-small"><span class="label">Keywords</span><span id="meta-keywords">—</span></div>
+        <div class="check-col ok-col">
+          <div class="col-title">✅ Itens OK</div>
+          <ul class="check-ul" id="ul-ok"></ul>
         </div>
       </div>
-      <div class="info-card mt-20"><h3>Estrutura de Títulos (Headings)</h3><div id="headings-tree" class="headings-tree"></div></div>
     </div>
 
-    <div class="tab-content" id="tab-conteudo">
-      <div class="stats-row">
-        <div class="stat-box"><div class="stat-num" id="stat-palavras">0</div><div class="stat-lbl">Palavras</div></div>
-        <div class="stat-box"><div class="stat-num" id="stat-imgs">0</div><div class="stat-lbl">Imagens</div></div>
-        <div class="stat-box"><div class="stat-num" id="stat-imgs-semalt">0</div><div class="stat-lbl">Imgs sem Alt</div></div>
-        <div class="stat-box"><div class="stat-num" id="stat-links-int">0</div><div class="stat-lbl">Links Internos</div></div>
-        <div class="stat-box"><div class="stat-num" id="stat-links-ext">0</div><div class="stat-lbl">Links Externos</div></div>
+    <!-- META -->
+    <div class="tab-pane" id="tab-meta">
+      <div class="card-section">
+        <div class="meta-field"><div class="meta-fl">Title Tag</div><div class="meta-fv" id="mf-title"></div><div class="meta-bar-row"><div class="meta-bar-wrap"><div class="meta-bar" id="mbar-title"></div></div><span id="mbar-title-lbl"></span></div><div id="mf-title-badge"></div></div>
+        <div class="meta-field"><div class="meta-fl">Meta Description</div><div class="meta-fv" id="mf-desc"></div><div class="meta-bar-row"><div class="meta-bar-wrap"><div class="meta-bar" id="mbar-desc"></div></div><span id="mbar-desc-lbl"></span></div><div id="mf-desc-badge"></div></div>
+        <div class="meta-grid4">
+          <div class="meta-mini"><span class="ml">Charset</span><span id="mf-charset"></span></div>
+          <div class="meta-mini"><span class="ml">Viewport</span><span id="mf-viewport"></span></div>
+          <div class="meta-mini"><span class="ml">Robots meta</span><span id="mf-robots-meta"></span></div>
+          <div class="meta-mini"><span class="ml">Author</span><span id="mf-author"></span></div>
+        </div>
       </div>
-      <div class="info-card mt-20" id="card-imgs-semalt" style="display:none">
-        <h3>⚠️ Imagens sem Alt Text</h3><ul id="lista-imgs-semalt" class="url-list"></ul>
-      </div>
-    </div>
-
-    <div class="tab-content" id="tab-tecnico">
-      <div class="tecnico-grid">
-        <div class="tecnico-item"><div class="tec-icon">🔗</div><div class="tec-info"><div class="tec-name">Canonical Tag</div><div class="tec-value" id="tec-canonical-val">—</div><div id="tec-canonical-badge"></div></div></div>
-        <div class="tecnico-item"><div class="tec-icon">🤖</div><div class="tec-info"><div class="tec-name">robots.txt</div><div class="tec-value" id="tec-robots-val">—</div><div id="tec-robots-badge"></div></div></div>
-        <div class="tecnico-item"><div class="tec-icon">🗺️</div><div class="tec-info"><div class="tec-name">sitemap.xml</div><div class="tec-value" id="tec-sitemap-val">—</div><div id="tec-sitemap-badge"></div></div></div>
-        <div class="tecnico-item"><div class="tec-icon">📋</div><div class="tec-info"><div class="tec-name">Schema Markup</div><div class="tec-value" id="tec-schema-val">—</div><div id="tec-schema-badge"></div></div></div>
-        <div class="tecnico-item"><div class="tec-icon">🌐</div><div class="tec-info"><div class="tec-name">Status HTTP</div><div class="tec-value" id="tec-http-val">—</div><div id="tec-http-badge"></div></div></div>
-        <div class="tecnico-item"><div class="tec-icon">📱</div><div class="tec-info"><div class="tec-name">Mobile Friendly</div><div class="tec-value" id="tec-mobile-val">—</div><div id="tec-mobile-badge"></div></div></div>
-      </div>
-      <div class="info-card mt-20" id="card-robots-content" style="display:none">
-        <h3>Conteúdo robots.txt</h3><pre id="robots-content" class="code-block"></pre>
+      <div class="card-section" style="margin-top:16px">
+        <div class="section-title">Estrutura de Headings</div>
+        <div id="headings-tree"></div>
       </div>
     </div>
 
-    <div class="tab-content" id="tab-performance">
+    <!-- CONTEUDO -->
+    <div class="tab-pane" id="tab-conteudo">
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-n" id="st-palavras">0</div><div class="stat-l">Palavras</div></div>
+        <div class="stat-box"><div class="stat-n" id="st-imgs">0</div><div class="stat-l">Imagens</div></div>
+        <div class="stat-box"><div class="stat-n" id="st-semalt">0</div><div class="stat-l">Sem Alt</div></div>
+        <div class="stat-box"><div class="stat-n" id="st-int">0</div><div class="stat-l">Links Int.</div></div>
+        <div class="stat-box"><div class="stat-n" id="st-ext">0</div><div class="stat-l">Links Ext.</div></div>
+        <div class="stat-box"><div class="stat-n" id="st-ratio">0%</div><div class="stat-l">Ratio Texto</div></div>
+      </div>
+      <div class="card-section" style="margin-top:16px" id="imgs-semalt-box" style="display:none">
+        <div class="section-title">⚠️ Imagens sem Alt Text</div>
+        <ul class="url-list" id="imgs-semalt-list"></ul>
+      </div>
+    </div>
+
+    <!-- TECNICO -->
+    <div class="tab-pane" id="tab-tecnico">
+      <div class="tec-grid">
+        <div class="tec-card"><div class="tec-icon">🔗</div><div><div class="tec-name">Canonical Tag</div><div class="tec-val" id="tec-canonical"></div><div id="tec-canonical-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">🤖</div><div><div class="tec-name">robots.txt</div><div class="tec-val" id="tec-robots"></div><div id="tec-robots-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">🗺️</div><div><div class="tec-name">sitemap.xml</div><div class="tec-val" id="tec-sitemap"></div><div id="tec-sitemap-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">📋</div><div><div class="tec-name">Schema Markup</div><div class="tec-val" id="tec-schema"></div><div id="tec-schema-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">🌐</div><div><div class="tec-name">Status HTTP</div><div class="tec-val" id="tec-status"></div><div id="tec-status-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">📱</div><div><div class="tec-name">Mobile Friendly</div><div class="tec-val" id="tec-mobile"></div><div id="tec-mobile-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">🔍</div><div><div class="tec-name">FAQ Schema</div><div class="tec-val" id="tec-faq"></div><div id="tec-faq-b"></div></div></div>
+        <div class="tec-card"><div class="tec-icon">🏢</div><div><div class="tec-name">Org. Schema</div><div class="tec-val" id="tec-org"></div><div id="tec-org-b"></div></div></div>
+      </div>
+      <div class="card-section" style="margin-top:16px" id="robots-content-box" style="display:none">
+        <div class="section-title">Conteúdo do robots.txt</div>
+        <pre id="robots-pre" class="code-pre"></pre>
+      </div>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="tab-pane" id="tab-performance">
       <div class="perf-grid">
-        <div class="perf-card"><div class="perf-icon">⏱️</div><div class="perf-val" id="perf-tempo-val">—</div><div class="perf-lbl">Tempo de Resposta</div><div id="perf-tempo-status"></div></div>
-        <div class="perf-card"><div class="perf-icon">📦</div><div class="perf-val" id="perf-tamanho-val">—</div><div class="perf-lbl">Tamanho do HTML</div><div id="perf-tamanho-status"></div></div>
-        <div class="perf-card"><div class="perf-icon">🔒</div><div class="perf-val" id="perf-https-val">—</div><div class="perf-lbl">HTTPS</div></div>
+        <div class="perf-card"><div class="perf-ico">⏱️</div><div class="perf-val" id="pf-tempo"></div><div class="perf-lbl">Tempo Resposta</div><div id="pf-tempo-b"></div></div>
+        <div class="perf-card"><div class="perf-ico">📦</div><div class="perf-val" id="pf-size"></div><div class="perf-lbl">Tamanho HTML</div><div id="pf-size-b"></div></div>
+        <div class="perf-card"><div class="perf-ico">🔒</div><div class="perf-val" id="pf-https"></div><div class="perf-lbl">HTTPS</div></div>
+        <div class="perf-card"><div class="perf-ico">🗜️</div><div class="perf-val" id="pf-gzip"></div><div class="perf-lbl">Compressão</div></div>
+        <div class="perf-card"><div class="perf-ico">📡</div><div class="perf-val" id="pf-req"></div><div class="perf-lbl">Requests</div><div id="pf-req-b"></div></div>
+        <div class="perf-card"><div class="perf-ico">⚠️</div><div class="perf-val" id="pf-block"></div><div class="perf-lbl">Render-blocking</div></div>
+        <div class="perf-card"><div class="perf-ico">📊</div><div class="perf-val" id="pf-gtm"></div><div class="perf-lbl">GTM/Analytics</div></div>
+        <div class="perf-card"><div class="perf-ico">🔤</div><div class="perf-val" id="pf-font"></div><div class="perf-lbl">font-display</div></div>
       </div>
-      <div class="perf-dicas"><h3>💡 Dicas de Performance</h3><ul id="perf-dicas-lista" class="dicas-lista"></ul></div>
     </div>
 
-    <div class="tab-content" id="tab-social">
+    <!-- SOCIAL -->
+    <div class="tab-pane" id="tab-social">
       <div class="social-grid">
-        <div class="social-card">
-          <h3>Open Graph (Facebook / WhatsApp)</h3>
-          <div class="og-preview"><div class="og-image" id="og-image-box"></div><div class="og-text"><div class="og-site" id="og-site"></div><div class="og-title" id="og-title-prev">—</div><div class="og-desc" id="og-desc-prev">—</div></div></div>
+        <div class="card-section">
+          <div class="section-title">Open Graph (Facebook / WhatsApp)</div>
+          <div class="og-preview">
+            <div class="og-img" id="og-img-prev"></div>
+            <div class="og-text-prev">
+              <div class="og-domain" id="og-domain"></div>
+              <div class="og-title-prev" id="og-title-prev"></div>
+              <div class="og-desc-prev" id="og-desc-prev"></div>
+            </div>
+          </div>
           <div class="og-fields">
-            <div class="og-field"><span class="label">og:title</span><span id="og-title">—</span></div>
-            <div class="og-field"><span class="label">og:description</span><span id="og-desc">—</span></div>
-            <div class="og-field"><span class="label">og:image</span><span id="og-image">—</span></div>
-            <div class="og-field"><span class="label">og:type</span><span id="og-type">—</span></div>
-            <div class="og-field"><span class="label">og:url</span><span id="og-url">—</span></div>
+            <div class="og-row"><span class="og-key">og:title</span><span id="og-title"></span></div>
+            <div class="og-row"><span class="og-key">og:description</span><span id="og-desc"></span></div>
+            <div class="og-row"><span class="og-key">og:image</span><span id="og-image"></span></div>
+            <div class="og-row"><span class="og-key">og:type</span><span id="og-type"></span></div>
           </div>
         </div>
-        <div class="social-card">
-          <h3>Twitter Card (X)</h3>
+        <div class="card-section">
+          <div class="section-title">Twitter Card (X)</div>
           <div class="og-fields">
-            <div class="og-field"><span class="label">twitter:card</span><span id="tc-card">—</span></div>
-            <div class="og-field"><span class="label">twitter:title</span><span id="tc-title">—</span></div>
-            <div class="og-field"><span class="label">twitter:description</span><span id="tc-desc">—</span></div>
-            <div class="og-field"><span class="label">twitter:image</span><span id="tc-image">—</span></div>
+            <div class="og-row"><span class="og-key">twitter:card</span><span id="tc-card"></span></div>
+            <div class="og-row"><span class="og-key">twitter:title</span><span id="tc-title"></span></div>
+            <div class="og-row"><span class="og-key">twitter:description</span><span id="tc-desc"></span></div>
+            <div class="og-row"><span class="og-key">twitter:image</span><span id="tc-image"></span></div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="tab-content" id="tab-seguranca">
+    <!-- SEGURANÇA -->
+    <div class="tab-pane" id="tab-seguranca">
       <div class="seg-grid">
-        <div class="seg-item"><div class="seg-icon">🔒</div><div class="seg-info"><div class="seg-name">HTTPS</div><div class="seg-desc">Conexão criptografada SSL/TLS</div><div id="seg-https-badge"></div></div></div>
-        <div class="seg-item"><div class="seg-icon">🛡️</div><div class="seg-info"><div class="seg-name">HSTS</div><div class="seg-desc">Strict-Transport-Security header</div><div id="seg-hsts-badge"></div></div></div>
-        <div class="seg-item"><div class="seg-icon">🔐</div><div class="seg-info"><div class="seg-name">Content Security Policy</div><div class="seg-desc">CSP header configurado</div><div id="seg-csp-badge"></div></div></div>
-        <div class="seg-item"><div class="seg-icon">🖼️</div><div class="seg-info"><div class="seg-name">X-Frame-Options</div><div class="seg-desc">Proteção contra clickjacking</div><div id="seg-xframe-badge"></div></div></div>
+        <div class="seg-card"><div class="seg-ico">🔒</div><div><div class="seg-name">HTTPS / SSL</div><div class="seg-desc">Conexão criptografada TLS</div><div id="seg-https-b"></div></div></div>
+        <div class="seg-card"><div class="seg-ico">🛡️</div><div><div class="seg-name">HSTS</div><div class="seg-desc">Strict-Transport-Security</div><div id="seg-hsts-b"></div></div></div>
+        <div class="seg-card"><div class="seg-ico">🔐</div><div><div class="seg-name">Content Security Policy</div><div class="seg-desc">CSP header</div><div id="seg-csp-b"></div></div></div>
+        <div class="seg-card"><div class="seg-ico">🖼️</div><div><div class="seg-name">X-Frame-Options</div><div class="seg-desc">Proteção clickjacking</div><div id="seg-xframe-b"></div></div></div>
+        <div class="seg-card"><div class="seg-ico">⚠️</div><div><div class="seg-name">Mixed Content</div><div class="seg-desc">HTTP em página HTTPS</div><div id="seg-mixed-b"></div></div></div>
       </div>
     </div>
+
+  </div><!-- #seo-resultado -->
+</div><!-- .seo-page -->
+
+<!-- TOOLTIP -->
+<div id="seo-tt" class="seo-tt" style="display:none">
+  <div class="tt-head"><span id="tt-ico"></span><strong id="tt-nome"></strong></div>
+  <div class="tt-rows">
+    <div class="tt-r"><div class="tt-rl">📌 O que é</div><div id="tt-oque" class="tt-rv"></div></div>
+    <div class="tt-r"><div class="tt-rl">⚠️ Problema</div><div id="tt-prob" class="tt-rv"></div></div>
+    <div class="tt-r"><div class="tt-rl">🎯 Por que melhorar</div><div id="tt-porque" class="tt-rv"></div></div>
+    <div class="tt-r tt-sug"><div class="tt-rl">💡 Sugestão</div><div id="tt-sugest" class="tt-rv"></div></div>
   </div>
 </div>
 
 <style>
+:root{--primary:#6366f1}
 .seo-page{max-width:1200px;margin:0 auto;padding:0 0 60px}
-.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px}
-.page-title{font-size:1.8rem;font-weight:700;margin:0 0 6px;color:var(--text-primary)}
-.page-subtitle{color:var(--text-secondary);margin:0;font-size:.95rem}
-.seo-form-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:28px}
+.page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.page-title{font-size:1.7rem;font-weight:800;margin:0 0 4px}
+.page-subtitle{color:var(--text-secondary);font-size:.9rem;margin:0}
+.seo-form-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px}
 .seo-form-row{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
-.seo-form-url{flex:1;min-width:280px}
-.seo-form-projeto{width:220px}
-.seo-form-row label{display:block;font-size:.85rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
-.input-with-icon{position:relative}
-.input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:1rem}
-.input-with-icon .form-input{padding-left:42px}
-.btn-analisar{padding:12px 28px;font-size:1rem;font-weight:600;white-space:nowrap}
-.seo-loading{text-align:center;padding:48px 24px;background:var(--card-bg);border-radius:16px;border:1px solid var(--border);margin-bottom:28px}
-.loading-spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.seo-form-url{flex:1;min-width:260px}
+.seo-form-row label{display:block;font-size:.82rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.input-icon-wrap{position:relative}
+.inp-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%)}
+/* Loading */
+.loading-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:40px;text-align:center;margin-bottom:24px}
+.loading-ring{width:52px;height:52px;border:5px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-steps{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:20px}
-.loading-steps .step{padding:6px 14px;border-radius:20px;font-size:.82rem;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border)}
-.loading-steps .step.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-.score-section{display:flex;gap:24px;margin-bottom:28px;flex-wrap:wrap}
-.score-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;gap:24px;align-items:center;flex:1;min-width:320px}
-.score-circle{position:relative;width:140px;height:140px;flex-shrink:0}
-.score-svg{width:140px;height:140px;transform:rotate(-90deg)}
-.score-bg{fill:none;stroke:var(--border);stroke-width:10}
-.score-progress{fill:none;stroke:#10b981;stroke-width:10;stroke-linecap:round;stroke-dasharray:314;stroke-dashoffset:314;transition:stroke-dashoffset 1s ease,stroke .5s}
-.score-number{position:absolute;top:50%;left:50%;transform:translate(-50%,-56%);font-size:2.2rem;font-weight:800;color:var(--text-primary)}
-.score-label-txt{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);font-size:.72rem;color:var(--text-secondary);white-space:nowrap}
-.score-meta{flex:1}
-.score-url{font-size:.85rem;color:var(--primary);margin-bottom:6px;word-break:break-all}
-.score-time{font-size:.8rem;color:var(--text-secondary);margin-bottom:12px}
-.score-status{font-size:1.1rem;font-weight:600;margin-bottom:16px}
-.btn-pdf{font-size:.9rem;padding:10px 20px}
-.resumo-cards{display:flex;flex-direction:column;gap:12px;min-width:160px}
-.resumo-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px 20px;text-align:center;border-left:4px solid}
-.resumo-card.bom{border-left-color:#10b981}
-.resumo-card.aviso{border-left-color:#f59e0b}
-.resumo-card.ruim{border-left-color:#ef4444}
-.resumo-num{font-size:1.8rem;font-weight:800}
-.resumo-card.bom .resumo-num{color:#10b981}
-.resumo-card.aviso .resumo-num{color:#f59e0b}
-.resumo-card.ruim .resumo-num{color:#ef4444}
-.resumo-desc{font-size:.8rem;color:var(--text-secondary)}
-.seo-tabs{display:flex;gap:4px;margin-bottom:20px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:6px;overflow-x:auto}
-.tab-btn{padding:8px 16px;border-radius:8px;border:none;background:transparent;color:var(--text-secondary);font-size:.85rem;cursor:pointer;white-space:nowrap;transition:all .2s}
-.tab-btn:hover{background:var(--bg);color:var(--text-primary)}
-.tab-btn.active{background:var(--primary);color:#fff;font-weight:600}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.section-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
-.info-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px}
-.info-card h3{margin:0 0 14px;font-size:.95rem;font-weight:700}
-.info-card.critico{border-left:4px solid #ef4444}
-.info-card.aviso{border-left:4px solid #f59e0b}
-.info-card.positivo{border-left:4px solid #10b981}
-.info-card.mt-20{margin-top:20px}
-.check-list{list-style:none;margin:0;padding:0}
-.check-list li{padding:6px 0;font-size:.85rem;border-bottom:1px solid var(--border);color:var(--text-secondary)}
-.check-list li:last-child{border-bottom:none}
-.check-list .item-nome{font-weight:600;color:var(--text-primary);display:block}
-.meta-grid{display:flex;flex-direction:column;gap:20px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:24px}
-.meta-item{display:flex;flex-direction:column;gap:8px}
-.meta-label{font-size:.8rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em}
-.meta-value{font-size:.95rem;color:var(--text-primary);background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--border);word-break:break-all}
-.meta-bar-row{display:flex;align-items:center;gap:10px}
-.meta-bar-wrap{flex:1;background:var(--border);border-radius:4px;height:6px;overflow:hidden}
-.meta-bar{height:100%;border-radius:4px;transition:width .6s ease;background:#10b981}
-.meta-chars{font-size:.78rem;color:var(--text-secondary);min-width:60px}
-.meta-row-small{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding-top:12px;border-top:1px solid var(--border)}
-.meta-small{background:var(--bg);border-radius:8px;padding:10px 14px;font-size:.83rem}
-.meta-small .label{display:block;font-weight:700;color:var(--text-secondary);font-size:.75rem;margin-bottom:4px}
-.headings-tree{display:flex;flex-direction:column;gap:4px}
-.heading-item{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:6px;background:var(--bg);font-size:.85rem}
-.heading-tag{font-weight:700;color:var(--primary);min-width:28px;font-size:.78rem}
-.heading-h2{margin-left:20px}
-.heading-h3{margin-left:40px}
-.heading-h4{margin-left:60px}
-.stats-row{display:flex;gap:16px;flex-wrap:wrap}
-.stat-box{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;flex:1;min-width:100px}
-.stat-num{font-size:2rem;font-weight:800;color:var(--primary)}
-.stat-lbl{font-size:.78rem;color:var(--text-secondary);margin-top:4px}
-.url-list{list-style:none;padding:0;margin:0}
-.url-list li{padding:6px 0;font-size:.82rem;color:var(--text-secondary);border-bottom:1px solid var(--border);word-break:break-all}
-.tecnico-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-.tecnico-item{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;gap:16px;align-items:flex-start}
-.tec-icon{font-size:1.5rem;flex-shrink:0}
-.tec-name{font-weight:700;font-size:.9rem;margin-bottom:4px}
-.tec-value{font-size:.82rem;color:var(--text-secondary);margin-bottom:8px;word-break:break-all}
-.tec-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
-.badge-bom{background:#d1fae5;color:#065f46}
-.badge-ruim{background:#fee2e2;color:#991b1b}
-.badge-aviso{background:#fef3c7;color:#92400e}
-.code-block{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:.78rem;color:var(--text-secondary);white-space:pre-wrap;overflow-x:auto;margin:0}
-.perf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
-.perf-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center}
-.perf-icon{font-size:2rem;margin-bottom:8px}
-.perf-val{font-size:1.6rem;font-weight:800;color:var(--text-primary);margin-bottom:4px}
-.perf-lbl{font-size:.8rem;color:var(--text-secondary);margin-bottom:8px}
-.perf-dicas{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:20px}
-.perf-dicas h3{margin:0 0 14px;font-size:.95rem}
-.dicas-lista{list-style:none;padding:0;margin:0}
-.dicas-lista li{padding:8px 0;font-size:.85rem;color:var(--text-secondary);border-bottom:1px solid var(--border)}
-.dicas-lista li:last-child{border-bottom:none}
-.social-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
-.social-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:24px}
-.social-card h3{margin:0 0 16px;font-size:.95rem}
-.og-preview{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px}
-.og-image{height:120px;background:linear-gradient(135deg,var(--primary) 0%,#6366f1 100%);background-size:cover;background-position:center}
-.og-text{padding:12px}
-.og-site{font-size:.72rem;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px}
-.og-title{font-weight:700;font-size:.9rem;margin-bottom:4px}
-.og-desc{font-size:.8rem;color:var(--text-secondary)}
-.og-fields{display:flex;flex-direction:column;gap:8px}
-.og-field{display:flex;gap:10px;font-size:.83rem}
-.og-field .label{font-weight:700;color:var(--text-secondary);min-width:120px}
-.seg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
-.seg-item{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;gap:16px;align-items:flex-start}
-.seg-icon{font-size:1.8rem;flex-shrink:0}
-.seg-name{font-weight:700;font-size:.9rem;margin-bottom:4px}
-.seg-desc{font-size:.8rem;color:var(--text-secondary);margin-bottom:8px}
-.seg-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
-@media(max-width:768px){.score-section{flex-direction:column}.resumo-cards{flex-direction:row}.seo-form-row{flex-direction:column}.seo-form-projeto{width:100%}}
-
-<style id="tooltip-styles">
-/* Tooltip SEO */
-#seo-tooltip{position:fixed;z-index:9999;background:#1e1e2e;color:#e2e8f0;border-radius:12px;padding:16px;max-width:340px;font-size:.82rem;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none;display:none;border:1px solid rgba(255,255,255,.1)}
-.tt-header{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)}
-.tt-header strong{font-size:.88rem;color:#f1f5f9}
-.tt-body{display:flex;flex-direction:column;gap:8px}
-.tt-row{display:flex;flex-direction:column;gap:2px}
-.tt-lbl{font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em}
-.tt-row p{margin:0;color:#cbd5e1;line-height:1.5}
-.tt-sug p{color:#86efac;font-style:italic}
+.loading-steps{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.lstep{padding:5px 12px;border-radius:20px;font-size:.8rem;background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);transition:all .3s}
+.lstep.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* Score */
+.score-row{display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap}
+.score-main{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:28px;display:flex;gap:24px;align-items:center;flex:1;min-width:300px}
+.score-ring-wrap{position:relative;width:140px;height:140px;flex-shrink:0}
+.score-svg{width:140px;height:140px}
+.score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-num{font-size:2.4rem;font-weight:900;color:var(--text-primary);line-height:1}
+.score-lbl{font-size:.72rem;color:var(--text-secondary);margin-top:2px}
+.score-url{font-size:.83rem;color:var(--primary);margin-bottom:4px;word-break:break-all}
+.score-ts{font-size:.78rem;color:var(--text-secondary);margin-bottom:10px}
+.score-verdict{font-size:1.1rem;font-weight:700}
+.score-counters{display:flex;flex-direction:column;gap:12px;min-width:150px}
+.counter-box{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px 20px;text-align:center;border-left:4px solid}
+.counter-box.ok{border-left-color:#10b981}
+.counter-box.warn{border-left-color:#f59e0b}
+.counter-box.fail{border-left-color:#ef4444}
+.counter-n{font-size:2rem;font-weight:900}
+.counter-box.ok .counter-n{color:#10b981}
+.counter-box.warn .counter-n{color:#f59e0b}
+.counter-box.fail .counter-n{color:#ef4444}
+.counter-l{font-size:.78rem;color:var(--text-secondary);margin-top:2px}
+/* IA */
+.ia-box{background:linear-gradient(135deg,rgba(99,102,241,.07) 0%,rgba(139,92,246,.07) 100%);border:1px solid rgba(99,102,241,.25);border-radius:16px;padding:24px;margin-bottom:24px}
+.ia-header{font-weight:700;color:#6366f1;font-size:.95rem;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(99,102,241,.2)}
+.ia-body{font-size:.87rem;line-height:1.8;color:var(--text-primary)}
+.ia-body h2{font-size:.9rem;font-weight:700;color:#6366f1;margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid rgba(99,102,241,.1)}
+.ia-body strong{font-weight:700}
+.ia-body ul,.ia-body ol{padding-left:20px;margin:6px 0}
+.ia-body li{margin:4px 0}
+/* Tabs */
+.tabs-nav{display:flex;gap:4px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:5px;overflow-x:auto;margin-bottom:20px}
+.tab{padding:8px 16px;border-radius:8px;border:none;background:transparent;color:var(--text-secondary);font-size:.83rem;cursor:pointer;white-space:nowrap;transition:all .2s;font-weight:500}
+.tab:hover{background:var(--bg);color:var(--text-primary)}
+.tab.active{background:var(--primary);color:#fff;font-weight:700}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+/* Checks 3 colunas */
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.check-col{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px;border-top:4px solid}
+.fail-col{border-top-color:#ef4444}
+.warn-col{border-top-color:#f59e0b}
+.ok-col{border-top-color:#10b981}
+.col-title{font-size:.88rem;font-weight:700;margin-bottom:14px;color:var(--text-primary)}
+.check-ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+/* Item de check — clicável com tooltip */
+.check-li{border-radius:8px;overflow:hidden;transition:background .15s}
+.check-li:hover{background:var(--bg)}
+.check-li-header{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;cursor:pointer}
+.check-li-icon{font-size:.85rem;flex-shrink:0;margin-top:1px}
+.check-li-body{flex:1}
+.check-li-nome{font-size:.83rem;font-weight:600;color:var(--text-primary);display:flex;align-items:center;gap:4px}
+.check-li-nome .info-dot{font-size:.65rem;color:var(--text-secondary);opacity:.7}
+.check-li-desc{font-size:.78rem;color:var(--text-secondary);margin-top:1px}
+.check-li-arrow{font-size:.7rem;color:var(--text-secondary);flex-shrink:0;transition:transform .2s;margin-top:2px}
+.check-li.open .check-li-arrow{transform:rotate(90deg)}
 /* Painel expansível */
-.check-painel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin:4px 0 8px;font-size:.82rem;line-height:1.6;animation:slideDown .2s ease}
-@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.check-painel code{background:rgba(99,102,241,.1);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:.78rem;display:inline-block;margin:2px 0;word-break:break-all}
-.check-painel pre{margin:8px 0 0}
-.check-painel .barra-wrap{height:6px;background:var(--border);border-radius:3px;margin:6px 0 2px;overflow:hidden}
-.check-painel .barra-fill{height:100%;border-radius:3px;transition:width .5s ease}
-.check-painel .tag-schema{display:inline-block;background:rgba(99,102,241,.15);color:var(--primary);border-radius:4px;padding:2px 8px;font-size:.75rem;margin:2px}
-.check-list-item{padding:8px 0;border-bottom:1px solid var(--border)}
-.check-list-item:last-child{border:none}
-.item-nome{display:block;font-weight:600;color:var(--text-primary);margin-bottom:2px}
-.item-nome:hover{color:var(--primary)}
-.item-desc{font-size:.82rem;color:var(--text-secondary)}
-/* Análise IA */
-.ia-section{background:linear-gradient(135deg,rgba(99,102,241,.08) 0%,rgba(139,92,246,.08) 100%);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:20px;margin-bottom:20px}
-.ia-section h3{margin:0 0 12px;font-size:.95rem;color:#6366f1}
-.ia-content{font-size:.85rem;line-height:1.8;color:var(--text-primary)}
-.ia-content h2{font-size:.88rem;font-weight:700;color:#6366f1;margin:12px 0 6px}
-.ia-content strong{color:var(--text-primary)}
-.ia-content ul,.ia-content ol{padding-left:18px;margin:4px 0}
-.ia-content li{margin:3px 0}
-</style>
+.check-painel{display:none;padding:10px 14px 12px 38px;font-size:.8rem;line-height:1.7;color:var(--text-secondary);border-top:1px solid var(--border);background:var(--bg)}
+.check-li.open .check-painel{display:block}
+.check-painel code{background:rgba(99,102,241,.1);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:.75rem;word-break:break-all;display:inline-block;margin:1px 0}
+.check-painel pre{font-size:.74rem;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:8px;overflow:auto;max-height:120px;margin:6px 0 0}
+.check-painel .mini-bar{height:5px;background:var(--border);border-radius:3px;margin:5px 0 2px;overflow:hidden}
+.check-painel .mini-bar-fill{height:100%;border-radius:3px}
+.check-painel .tag{display:inline-block;background:rgba(99,102,241,.12);color:var(--primary);border-radius:4px;padding:1px 7px;font-size:.72rem;margin:2px}
+/* Tooltip */
+.seo-tt{position:fixed;z-index:9999;background:#1a1a2e;color:#e2e8f0;border-radius:14px;padding:18px;max-width:340px;font-size:.81rem;box-shadow:0 12px 40px rgba(0,0,0,.5);pointer-events:none;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+.tt-head{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.tt-head strong{font-size:.87rem;color:#f1f5f9;line-height:1.3}
+.tt-rows{display:flex;flex-direction:column;gap:10px}
+.tt-r{display:flex;flex-direction:column;gap:2px}
+.tt-rl{font-size:.68rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
+.tt-rv{color:#cbd5e1;line-height:1.5;font-size:.8rem}
+.tt-sug .tt-rv{color:#86efac;font-style:italic}
+/* Meta */
+.card-section{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:22px}
+.meta-field{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.meta-field:last-child{margin-bottom:0;padding-bottom:0;border:none}
+.meta-fl{font-size:.75rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.meta-fv{font-size:.9rem;color:var(--text-primary);background:var(--bg);padding:10px 14px;border-radius:8px;border:1px solid var(--border);word-break:break-all;margin-bottom:8px}
+.meta-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.meta-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.meta-bar{height:100%;border-radius:3px;transition:width .7s ease}
+.meta-grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.meta-mini{background:var(--bg);border-radius:8px;padding:10px 14px;font-size:.82rem;border:1px solid var(--border)}
+.meta-mini .ml{display:block;font-size:.72rem;font-weight:700;color:var(--text-secondary);margin-bottom:3px}
+.section-title{font-size:.85rem;font-weight:700;color:var(--text-primary);margin-bottom:14px}
+.headings-tree{display:flex;flex-direction:column;gap:3px}
+.h-item{display:flex;gap:8px;padding:6px 10px;background:var(--bg);border-radius:6px;font-size:.82rem;border:1px solid var(--border)}
+.h-tag{font-weight:800;color:var(--primary);min-width:24px;font-size:.75rem}
+/* Stats */
+.stat-row{display:flex;gap:12px;flex-wrap:wrap}
+.stat-box{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:18px 20px;text-align:center;flex:1;min-width:90px}
+.stat-n{font-size:1.8rem;font-weight:900;color:var(--primary)}
+.stat-l{font-size:.75rem;color:var(--text-secondary);margin-top:3px}
+.url-list{list-style:none;padding:0;margin:0}
+.url-list li{padding:5px 0;font-size:.8rem;color:var(--text-secondary);border-bottom:1px solid var(--border);word-break:break-all}
+/* Técnico */
+.tec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.tec-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;gap:14px;align-items:flex-start}
+.tec-icon{font-size:1.4rem;flex-shrink:0}
+.tec-name{font-weight:700;font-size:.85rem;margin-bottom:3px}
+.tec-val{font-size:.78rem;color:var(--text-secondary);margin-bottom:6px;word-break:break-all}
+.code-pre{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.75rem;white-space:pre-wrap;overflow:auto;max-height:160px;margin:0}
+/* Performance */
+.perf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+.perf-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.perf-ico{font-size:1.8rem;margin-bottom:6px}
+.perf-val{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+.perf-lbl{font-size:.75rem;color:var(--text-secondary)}
+/* Social */
+.social-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.og-preview{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.og-img{height:110px;background:linear-gradient(135deg,var(--primary),#8b5cf6);background-size:cover;background-position:center}
+.og-text-prev{padding:10px 14px}
+.og-domain{font-size:.7rem;color:var(--text-secondary);text-transform:uppercase;margin-bottom:2px}
+.og-title-prev{font-weight:700;font-size:.88rem;margin-bottom:2px}
+.og-desc-prev{font-size:.78rem;color:var(--text-secondary)}
+.og-fields{display:flex;flex-direction:column;gap:7px}
+.og-row{display:flex;gap:10px;font-size:.82rem}
+.og-key{font-weight:700;color:var(--text-secondary);min-width:110px;flex-shrink:0}
+/* Segurança */
+.seg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.seg-card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;gap:14px;align-items:flex-start}
+.seg-ico{font-size:1.5rem;flex-shrink:0}
+.seg-name{font-weight:700;font-size:.87rem;margin-bottom:2px}
+.seg-desc{font-size:.77rem;color:var(--text-secondary);margin-bottom:7px}
+/* Badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.73rem;font-weight:700}
+.badge-ok{background:#d1fae5;color:#065f46}
+.badge-fail{background:#fee2e2;color:#991b1b}
+.badge-warn{background:#fef3c7;color:#92400e}
+@media(max-width:900px){.three-col{grid-template-columns:1fr}.score-row{flex-direction:column}.score-counters{flex-direction:row}}
+@media(max-width:600px){.tabs-nav{gap:2px}.tab{padding:6px 10px;font-size:.75rem}}
 </style>
 
 <script>
-let dadosResultado=null;
-document.getElementById('form-seo').addEventListener('submit',async function(e){
+// ═══ DADOS DE TOOLTIP ═══
+const TT = {
+  "Title tag presente":{o:"A tag title define o título que aparece na aba do navegador e nos resultados do Google.",p:"Sem title tag, o Google não sabe qual é o tema principal da página.",q:"O title é o fator on-page mais importante para SEO — influencia diretamente o ranqueamento e o CTR.",s:"Crie um title único com a keyword principal no início, entre 50-60 caracteres."},
+  "Tamanho do title (50-60)":{o:"O Google exibe 50-60 caracteres do title na SERP. Títulos maiores são cortados.",p:"Title longo é cortado na SERP. Title curto desperdiça espaço valioso.",q:"Um title bem dimensionado maximiza o CTR e transmite a proposta de valor completa.",s:"Ajuste para 50-60 caracteres com keyword principal + diferencial."},
+  "Meta description presente":{o:"A meta description é o resumo exibido abaixo do título nos resultados do Google.",p:"Sem description, o Google escolhe aleatoriamente um trecho do conteúdo.",q:"Uma boa description aumenta o CTR em 5-15% mesmo sem mudar o ranking.",s:"Escreva 120-160 chars com keyword + benefício + CTA claro."},
+  "Tamanho da description (120-160)":{o:"O Google exibe 120-160 caracteres da meta description na SERP.",p:"Descriptions longas são cortadas. Curtas desperdiçam espaço persuasivo.",q:"O tamanho ideal garante que a mensagem completa apareça na SERP.",s:"Ajuste para 120-160 caracteres com keyword, benefício e chamada para ação."},
+  "Charset definido":{o:"O charset define a codificação de caracteres (UTF-8 é o padrão internacional).",p:"Sem charset, caracteres especiais (ã, ç, é) podem aparecer incorretamente.",q:"UTF-8 garante que acentos e caracteres do português funcionem em todos os browsers.",s:"Adicione <meta charset='UTF-8'> no início do <head>."},
+  "Sem meta refresh":{o:"A meta refresh redireciona o usuário para outra página após X segundos.",p:"Redirecionamentos via meta refresh são má prática e podem prejudicar indexação.",q:"O Google prefere redirecionamentos 301 no servidor.",s:"Use redirecionamento 301 no servidor em vez de meta refresh."},
+  "H1 único":{o:"O H1 é o título principal — deve haver exatamente um por página.",p:"Múltiplos H1 confundem o Google. H1 ausente elimina sinal importante de relevância.",q:"O H1 é o segundo fator on-page mais importante após o title.",s:"Crie um único H1 com a keyword principal da página."},
+  "H2s presentes":{o:"Os H2s são subtítulos que organizam o conteúdo em seções temáticas.",p:"Sem H2s, o conteúdo parece um bloco único — dificulta leitura e indexação.",q:"H2s com keywords secundárias aumentam a relevância temática.",s:"Use H2s para cada seção principal com variações da keyword."},
+  "H3s presentes":{o:"H3s são subtítulos de segundo nível dentro de cada H2.",p:"Ausência de H3s indica conteúdo pouco estruturado.",q:"Hierarquia completa de headings melhora experiência e entendimento semântico.",s:"Use H3s para subseções, especialmente em FAQs e listas."},
+  "HTTPS ativo":{o:"HTTPS criptografa a conexão via certificado SSL/TLS.",p:"Sites sem HTTPS são marcados como 'Não seguro' — afasta visitantes.",q:"Google usa HTTPS como fator de ranking desde 2014.",s:"Instale certificado SSL via Let's Encrypt e force HTTPS via redirect 301."},
+  "Viewport mobile":{o:"A meta viewport controla como a página aparece em dispositivos móveis.",p:"Sem viewport, o site aparece em tamanho desktop no celular.",q:"60%+ das buscas são mobile. Google usa Mobile-First Indexing.",s:"Adicione <meta name='viewport' content='width=device-width, initial-scale=1'>."},
+  "Canonical tag":{o:"A canonical indica ao Google qual é a versão oficial quando há páginas similares.",p:"Sem canonical, o Google pode indexar múltiplas versões diluindo a autoridade.",q:"Conteúdo duplicado pode resultar em penalidade e perda de ranking.",s:"Adicione <link rel='canonical' href='URL-oficial'> no <head>."},
+  "URL sem parâmetros":{o:"URLs com parâmetros podem ser vistas como páginas diferentes pelo Google.",p:"Parâmetros na URL podem gerar conteúdo duplicado.",q:"URLs limpas são mais fáceis de indexar, compartilhar e ranquear.",s:"Use URLs limpas. Configure GSC para ignorar parâmetros específicos."},
+  "URL não bloqueada":{o:"O robots.txt pode bloquear o Google de acessar páginas com Disallow.",p:"Se bloqueada no robots.txt, a página não aparece no Google.",q:"Páginas bloqueadas ficam invisíveis na busca independente do conteúdo.",s:"Remova a regra Disallow do robots.txt para esta URL."},
+  "robots.txt presente":{o:"O robots.txt instrui os robôs sobre quais páginas podem ser rastreadas.",p:"Sem robots.txt, o Google rastreia tudo incluindo áreas privadas.",q:"Um robots.txt bem configurado otimiza o crawl budget.",s:"Crie /robots.txt com diretivas User-agent e inclua link do sitemap."},
+  "sitemap.xml presente":{o:"O sitemap.xml lista todas as URLs para facilitar o rastreamento.",p:"Sem sitemap, o Google pode demorar para descobrir novas páginas.",q:"O sitemap acelera a indexação de páginas novas.",s:"Gere sitemap.xml e envie no Google Search Console."},
+  "Schema markup presente":{o:"Schema é código JSON-LD que adiciona contexto semântico para os buscadores.",p:"Sem schema, o Google não exibe rich snippets nos resultados.",q:"Rich snippets aumentam o CTR em 20-30%.",s:"Implemente Schema do tipo Organization, LocalBusiness e FAQPage."},
+  "FAQ Schema":{o:"FAQPage schema marca perguntas para que o Google exiba como rich snippets.",p:"Sem FAQ schema, as perguntas não aparecem expandidas nos resultados.",q:"FAQ rich snippets ocupam mais espaço na SERP e aumentam visibilidade.",s:"Adicione JSON-LD com @type FAQPage para cada Q&A da página."},
+  "Organization Schema":{o:"Organization/LocalBusiness schema fornece dados estruturados sobre a empresa.",p:"Sem schema de organização, menos dados para Knowledge Panel e resultados locais.",q:"Melhora o E-E-A-T — fator crucial de ranking desde 2022.",s:"Implemente com nome, endereço, telefone, CNPJ, horários e logo."},
+  "Conteúdo mínimo 300 palavras":{o:"Volume de conteúdo é sinal de profundidade e relevância para o Google.",p:"Menos de 300 palavras é thin content — não rankeia bem.",q:"Google prefere conteúdo que responda completamente à intenção de busca.",s:"Adicione FAQs, descrições, diferenciais — mínimo 600 palavras para páginas principais."},
+  "Alt text em imagens":{o:"O alt descreve imagens para o Google e usuários com deficiência visual.",p:"Imagens sem alt são ignoradas pelo Google — perda de ranking em imagens.",q:"Alt text é fundamental para acessibilidade e Google Images.",s:"Adicione alt descritivo em todas as imagens com keywords relevantes."},
+  "Imagens com dimensões":{o:"width e height nas imagens reservam espaço no layout antes do carregamento.",p:"Sem dimensões, imagens causam CLS — o conteúdo pula ao carregar.",q:"CLS é Core Web Vital do Google — alto CLS prejudica ranking.",s:"Adicione width e height em todas as tags <img>."},
+  "Links internos":{o:"Links internos conectam páginas do mesmo site distribuindo autoridade.",p:"Sem links internos, a página fica isolada — Google não descobre outras páginas.",q:"Links internos são essenciais para crawlability e distribuição de PageRank.",s:"Adicione 3-5 links para outras páginas relevantes do site."},
+  "Open Graph completo":{o:"Open Graph controla como a página aparece quando compartilhada no Facebook e WhatsApp.",p:"Sem OG tags, o WhatsApp escolhe título e imagem aleatoriamente.",q:"Compartilhamentos com preview profissional geram mais cliques.",s:"Adicione og:title, og:description, og:image (1200x630px) e og:url."},
+  "Twitter Card":{o:"Twitter Cards controlam a aparência dos links no X (Twitter).",p:"Sem Twitter Card, links no X aparecem sem preview visual.",q:"Cards visuais têm CTR maior que links de texto.",s:"Adicione twitter:card, twitter:title, twitter:description e twitter:image."},
+  "HSTS header":{o:"HSTS força o browser a sempre usar HTTPS.",p:"Sem HSTS, usuários podem ser redirecionados via HTTP antes do HTTPS.",q:"HSTS protege contra ataques man-in-the-middle.",s:"Configure: Strict-Transport-Security: max-age=31536000; includeSubDomains"},
+  "X-Frame-Options":{o:"X-Frame-Options impede que a página seja carregada em iframe de outro site.",p:"Sem este header, o site fica vulnerável a clickjacking.",q:"Clickjacking pode roubar dados de usuários.",s:"Configure: X-Frame-Options: SAMEORIGIN no nginx ou apache."},
+  "Sem mixed content":{o:"Mixed content é quando uma página HTTPS carrega recursos via HTTP.",p:"Browsers bloqueiam recursos HTTP em páginas HTTPS.",q:"Mixed content quebra a segurança do HTTPS.",s:"Atualize todas as URLs de recursos para HTTPS."},
+  "Velocidade < 2s":{o:"Tempo de resposta do servidor até o primeiro byte chegar ao browser (TTFB).",p:"Servidor lento aumenta o LCP — Core Web Vital negativo para SEO.",q:"53% dos usuários abandonam sites que demoram mais de 3s.",s:"Use cache de servidor, CDN (Cloudflare) e otimize queries de banco."},
+  "Compressão gzip/brotli":{o:"Compressão reduz o tamanho dos arquivos transferidos.",p:"Sem compressão, HTML/CSS/JS são transferidos no tamanho original.",q:"Gzip reduz tamanho em 60-80% com impacto direto no LCP.",s:"Ative gzip no nginx: gzip on; gzip_types text/html text/css application/javascript;"},
+  "Menos de 40 requests":{o:"Cada arquivo JS, CSS e imagem gera uma requisição HTTP separada.",p:"Muitas requisições aumentam o tempo de carregamento.",q:"Mais de 40 requests indica código inchado que prejudica o LCP.",s:"Combine CSS/JS, use sprites e elimine plugins desnecessários."},
+  "Lazy loading de imagens":{o:"Lazy loading carrega imagens apenas quando entram na área visível.",p:"Sem lazy loading, todas as imagens carregam imediatamente.",q:"Lazy loading reduz peso inicial e melhora o LCP.",s:"Adicione loading='lazy' em imagens abaixo do fold."},
+  "GTM ou Google Analytics":{o:"GTM e GA4 são ferramentas de rastreamento de comportamento e conversões.",p:"Sem rastreamento, não há dados para otimizar SEO e campanhas.",q:"Não se melhora o que não se mede — dados são essenciais.",s:"Instale GTM e configure GA4 com eventos de conversão."},
+  "font-display:swap":{o:"font-display:swap exibe texto com fonte fallback enquanto a fonte carrega.",p:"Sem swap, o browser pode esconder texto até a fonte carregar — FOIT.",q:"Texto invisível durante carregamento prejudica o LCP.",s:"Adicione font-display: swap no CSS ou &display=swap no Google Fonts."}
+};
+
+let dadosResultado = null;
+let ttTimer = null;
+
+// ═══ TOOLTIP ═══
+function showTT(e, nome, ok) {
+  const info = TT[nome];
+  if (!info) return;
+  clearTimeout(ttTimer);
+  const tt = document.getElementById('seo-tt');
+  document.getElementById('tt-ico').textContent = ok ? '✅' : '❌';
+  document.getElementById('tt-nome').textContent = nome;
+  document.getElementById('tt-oque').textContent = info.o;
+  document.getElementById('tt-prob').textContent = info.p;
+  document.getElementById('tt-porque').textContent = info.q;
+  document.getElementById('tt-sugest').textContent = info.s;
+  tt.style.display = 'block';
+  moveTT(e);
+}
+function moveTT(e) {
+  const tt = document.getElementById('seo-tt');
+  if (tt.style.display === 'none') return;
+  const x = Math.min(e.clientX + 18, window.innerWidth - 360);
+  const y = Math.min(e.clientY + 10, window.innerHeight - tt.offsetHeight - 10);
+  tt.style.left = x + 'px';
+  tt.style.top = y + 'px';
+}
+function hideTT() { ttTimer = setTimeout(() => { document.getElementById('seo-tt').style.display = 'none'; }, 200); }
+
+// ═══ MONTAR ITEM DE CHECK ═══
+function mkCheck(it, ok, uid) {
+  const icon = ok ? '✅' : it.peso >= 7 ? '❌' : '⚠️';
+  const painel = mkPainel(it.nome);
+  return `<li class="check-li" id="cli-${uid}">
+    <div class="check-li-header"
+      onmouseenter="showTT(event,'${esc4(it.nome)}',${ok})"
+      onmousemove="moveTT(event)"
+      onmouseleave="hideTT()"
+      onclick="toggleLi('${uid}')">
+      <span class="check-li-icon">${icon}</span>
+      <div class="check-li-body">
+        <div class="check-li-nome">${esc(it.nome)} <span class="info-dot">ℹ</span></div>
+        <div class="check-li-desc">${esc(it.desc)}</div>
+      </div>
+      ${painel ? '<span class="check-li-arrow">▶</span>' : ''}
+    </div>
+    ${painel ? `<div class="check-painel">${painel}</div>` : ''}
+  </li>`;
+}
+
+function toggleLi(uid) {
+  const el = document.getElementById('cli-' + uid);
+  if (el) el.classList.toggle('open');
+}
+
+function mkPainel(nome) {
+  if (!dadosResultado) return null;
+  const d = dadosResultado;
+  const m = d.meta || {}; const h = d.headings || {}; const img = d.imagens || {};
+  const lk = d.links || {}; const perf = d.performance || {}; const seg = d.seguranca || {};
+  const sch = d.schema || {}; const og = d.open_graph || {}; const tc = d.twitter_card || {};
+  const rob = d.robots || {}; const sit = d.sitemap || {}; const can = d.canonical || {};
+
+  const map = {
+    "Title tag presente": `<strong>Title encontrado:</strong><br><code>${esc(m.title||'(nenhum)')}</code><br><small>${m.title_len||0} caracteres</small>`,
+    "Tamanho do title (50-60)": `<strong>Title atual:</strong> "${esc(m.title||'')}"<br><div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(100,((m.title_len||0)/70)*100)}%;background:${m.title_len>=50&&m.title_len<=60?'#10b981':'#f59e0b'}"></div></div><small>${m.title_len||0} chars — ideal: 50-60</small>`,
+    "Meta description presente": `<strong>Description encontrada:</strong><br><code>${esc(m.description||'(nenhuma)')}</code><br><small>${m.desc_len||0} caracteres</small>`,
+    "Tamanho da description (120-160)": `"${esc(m.description||'')}"<br><div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(100,((m.desc_len||0)/180)*100)}%;background:${m.desc_len>=120&&m.desc_len<=160?'#10b981':'#f59e0b'}"></div></div><small>${m.desc_len||0} chars — ideal: 120-160</small>`,
+    "Charset definido": `<strong>Charset detectado:</strong> <code>${esc(m.charset||'(não encontrado)')}</code>`,
+    "Sem meta refresh": `<strong>Meta refresh:</strong> ${m.refresh?`<code>${esc(m.refresh)}</code>`:'(ausente — OK ✅)'}`,
+    "H1 único": `<strong>${(h.h1||[]).length} H1(s):</strong><br>${(h.h1||[]).map(t=>`<code>${esc(t)}</code>`).join('<br>')||'<em>(nenhum encontrado)</em>'}`,
+    "H2s presentes": `<strong>${(h.h2||[]).length} H2(s):</strong><br>${(h.h2||[]).slice(0,8).map(t=>`<code>${esc(t)}</code>`).join('<br>')||'<em>(nenhum)</em>'}`,
+    "H3s presentes": `<strong>${(h.h3||[]).length} H3(s):</strong><br>${(h.h3||[]).slice(0,6).map(t=>`<code>${esc(t)}</code>`).join('<br>')||'<em>(nenhum)</em>'}`,
+    "HTTPS ativo": `<strong>Protocolo:</strong> ${seg.https?'<span style="color:#10b981">✅ HTTPS ativo — conexão segura</span>':'<span style="color:#ef4444">❌ HTTP — sem criptografia</span>'}`,
+    "Viewport mobile": `<strong>Viewport encontrado:</strong><br><code>${esc(m.viewport||'(ausente)')}</code>`,
+    "Canonical tag": `<strong>Canonical URL:</strong><br><code>${esc(can.url||'(ausente)')}</code>`,
+    "URL sem parâmetros": `<strong>URL:</strong><br><code>${esc(d.url)}</code><br>${d.url_analise?.tem_parametros?'<span style="color:#f59e0b">⚠️ Parâmetros detectados</span>':'<span style="color:#10b981">✅ URL limpa</span>'}`,
+    "URL não bloqueada": `<strong>robots.txt primeiras linhas:</strong><br><pre>${esc(rob.conteudo?.split('\n').slice(0,8).join('\n')||'(não encontrado)')}</pre>`,
+    "robots.txt presente": `<strong>URL:</strong> <code>${esc(rob.url||'')}</code><br><strong>Status:</strong> ${rob.tem?'✅ Encontrado':'❌ Não encontrado'}<br><pre>${esc(rob.conteudo||'')}</pre>`,
+    "sitemap.xml presente": `<strong>URL:</strong> <code>${esc(sit.url||'')}</code><br>${sit.tem?'<span style="color:#10b981">✅ Encontrado</span>':'<span style="color:#ef4444">❌ Não encontrado</span>'}<br>${sit.em_robots?'✅ Declarado no robots.txt':'⚠️ Não declarado no robots.txt'}`,
+    "Schema markup presente": `<strong>Schemas detectados:</strong><br>${(sch.tipos||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join(' ')||'<em>(nenhum)</em>'}<br><br>${sch.tem_faq?'✅':'⚠️'} FAQPage &nbsp; ${sch.tem_organization?'✅':'⚠️'} Organization &nbsp; ${sch.tem_breadcrumb?'✅':'⚠️'} Breadcrumb`,
+    "FAQ Schema": `<strong>FAQPage Schema:</strong> ${sch.tem_faq?'<span style="color:#10b981">✅ Presente — rich snippets ativos</span>':'<span style="color:#ef4444">❌ Ausente — rich snippets indisponíveis</span>'}`,
+    "Organization Schema": `<strong>Organization Schema:</strong> ${sch.tem_organization?'<span style="color:#10b981">✅ Presente</span>':'<span style="color:#ef4444">❌ Ausente</span>'}`,
+    "Conteúdo mínimo 300 palavras": `<strong>Palavras encontradas: ${d.conteudo?.n_palavras||0}</strong><div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(100,((d.conteudo?.n_palavras||0)/800)*100)}%;background:${(d.conteudo?.n_palavras||0)>=300?'#10b981':'#ef4444'}"></div></div><small>Mínimo: 300 | Ideal para SEO: 600+</small>`,
+    "Alt text em imagens": `<strong>${img.sem_alt||0} de ${img.total||0} imagens sem alt:</strong><br>${(img.sem_alt_lista||[]).map(s=>`<code>${esc(s)}</code>`).join('<br>')||'✅ Todas têm alt text'}`,
+    "Imagens com dimensões": `<strong>Imagens sem width/height:</strong> ${img.sem_dimensoes||0} de ${img.total||0}<br><small>Risco de CLS — Core Web Vital</small>`,
+    "Links internos": `<strong>Links detectados:</strong><br>🔗 Internos: <strong>${lk.internos||0}</strong> &nbsp; 🌐 Externos: <strong>${lk.externos||0}</strong> &nbsp; 🚫 Nofollow: <strong>${lk.nofollow||0}</strong>`,
+    "Open Graph completo": `<strong>og:title:</strong> ${esc(og.title||'(ausente)')}<br><strong>og:description:</strong> ${esc(og.description||'(ausente)')}<br><strong>og:image:</strong> ${esc(og.image||'(ausente)')}<br><strong>og:type:</strong> ${esc(og.type||'(ausente)')}`,
+    "Twitter Card": `<strong>twitter:card:</strong> ${esc(tc.card||'(ausente)')}<br><strong>twitter:title:</strong> ${esc(tc.title||'(ausente)')}<br><strong>twitter:image:</strong> ${esc(tc.image||'(ausente)')}`,
+    "HSTS header": `<strong>Strict-Transport-Security:</strong> ${seg.hsts?'<span style="color:#10b981">✅ Configurado</span>':'<span style="color:#ef4444">❌ Ausente</span>'}`,
+    "X-Frame-Options": `<strong>X-Frame-Options:</strong> ${seg.x_frame_options?'<span style="color:#10b981">✅ Configurado</span>':'<span style="color:#ef4444">❌ Ausente</span>'}`,
+    "Sem mixed content": `<strong>Mixed content:</strong> ${seg.mixed_content?'<span style="color:#ef4444">❌ Detectado — recursos HTTP em página HTTPS</span>':'<span style="color:#10b981">✅ Não detectado</span>'}`,
+    "Velocidade < 2s": `<strong>Tempo de resposta: ${perf.tempo_resposta}s</strong><div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(100,(perf.tempo_resposta/5)*100)}%;background:${perf.tempo_resposta<1?'#10b981':perf.tempo_resposta<3?'#f59e0b':'#ef4444'}"></div></div><small>Ideal: &lt;1s | Aceitável: 1-3s | Crítico: &gt;3s</small>`,
+    "Compressão gzip/brotli": `<strong>Compressão:</strong> ${perf.gzip?'<span style="color:#10b981">✅ gzip/brotli ativo</span>':'<span style="color:#ef4444">❌ Sem compressão</span>'}<br><small>Tamanho HTML: ${perf.tamanho_html_kb} KB</small>`,
+    "Menos de 40 requests": `<strong>Total: ${perf.n_total_requests} requests</strong><br>📜 JS: ${perf.n_scripts} &nbsp; 🎨 CSS: ${perf.n_styles} &nbsp; 🖼️ Imgs: ${(perf.n_total_requests||0)-(perf.n_scripts||0)-(perf.n_styles||0)}<div class="mini-bar"><div class="mini-bar-fill" style="width:${Math.min(100,((perf.n_total_requests||0)/80)*100)}%;background:${(perf.n_total_requests||0)<20?'#10b981':(perf.n_total_requests||0)<40?'#f59e0b':'#ef4444'}"></div></div>`,
+    "Lazy loading de imagens": `<strong>Lazy loading:</strong> ${perf.tem_lazy?'<span style="color:#10b981">✅ Detectado</span>':'<span style="color:#ef4444">❌ Não detectado</span>'}<br><small>Imagens com lazy: ${img.com_lazy||0} de ${img.total||0}</small>`,
+    "GTM ou Google Analytics": `<strong>GTM:</strong> ${perf.tem_gtm?`<span style="color:#10b981">✅ ${esc(perf.gtm_id)}</span>`:'❌ Não encontrado'}<br><strong>GA:</strong> ${perf.tem_ga?'<span style="color:#10b981">✅ Detectado</span>':'❌ Não encontrado'}`,
+    "font-display:swap": `<strong>font-display:swap:</strong> ${perf.tem_font_display?'<span style="color:#10b981">✅ Detectado no CSS</span>':'<span style="color:#ef4444">❌ Não detectado</span>'}`
+  };
+  return map[nome] || null;
+}
+
+// ═══ FORM SUBMIT ═══
+document.getElementById('form-seo').addEventListener('submit', async function(e) {
   e.preventDefault();
-  const url=document.getElementById('input-url').value.trim();
-  if(!url)return;
-  document.getElementById('seo-resultado').style.display='none';
-  document.getElementById('seo-loading').style.display='block';
-  document.getElementById('btn-analisar').querySelector('.btn-text').style.display='none';
-  document.getElementById('btn-analisar').querySelector('.btn-loading').style.display='inline';
-  document.getElementById('btn-analisar').disabled=true;
-  animarSteps();
-  const formData=new FormData(this);
-  try{
-    const resp=await fetch('/seo/analisar',{method:'POST',body:formData});
-    const dados=await resp.json();
-    dadosResultado=dados;
-    renderResultado(dados);
-  }catch(err){alert('Erro ao realizar análise. Tente novamente.');}
-  finally{
-    document.getElementById('seo-loading').style.display='none';
-    document.getElementById('btn-analisar').querySelector('.btn-text').style.display='inline';
-    document.getElementById('btn-analisar').querySelector('.btn-loading').style.display='none';
-    document.getElementById('btn-analisar').disabled=false;
+  const url = document.getElementById('input-url').value.trim();
+  if (!url) return;
+  document.getElementById('seo-resultado').style.display = 'none';
+  document.getElementById('seo-loading').style.display = 'block';
+  document.getElementById('btn-txt').style.display = 'none';
+  document.getElementById('btn-load').style.display = 'inline';
+  document.getElementById('btn-analisar').disabled = true;
+  animSteps();
+  try {
+    const fd = new FormData(this);
+    const resp = await fetch('/seo/analisar', {method:'POST', body:fd});
+    const d = await resp.json();
+    dadosResultado = d;
+    renderTudo(d);
+  } catch(err) {
+    alert('Erro ao analisar. Verifique a URL e tente novamente.');
+  } finally {
+    document.getElementById('seo-loading').style.display = 'none';
+    document.getElementById('btn-txt').style.display = 'inline';
+    document.getElementById('btn-load').style.display = 'none';
+    document.getElementById('btn-analisar').disabled = false;
   }
 });
 
-function animarSteps(){
-  const steps=['step1','step2','step3','step4','step5'];
-  steps.forEach(s=>document.getElementById(s).classList.remove('active'));
-  let i=0;
-  const iv=setInterval(()=>{
-    if(i<steps.length){if(i>0)document.getElementById(steps[i-1]).classList.remove('active');document.getElementById(steps[i]).classList.add('active');i++;}
+function animSteps() {
+  const ids = ['ls1','ls2','ls3','ls4','ls5'];
+  ids.forEach(id => document.getElementById(id).classList.remove('active'));
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i < ids.length) { if(i>0) document.getElementById(ids[i-1]).classList.remove('active'); document.getElementById(ids[i]).classList.add('active'); i++; }
     else clearInterval(iv);
-  },700);
+  }, 900);
 }
 
-function renderResultado(d){
-  document.getElementById('seo-resultado').style.display='block';
-  window.scrollTo({top:document.getElementById('seo-resultado').offsetTop-80,behavior:'smooth'});
-  const score=d.score_geral||0;
-  document.getElementById('score-number').textContent=score;
-  document.getElementById('score-url').textContent=d.url;
-  document.getElementById('score-time').textContent=`Analisado em ${d.timestamp} — ${d.tempo_analise}s`;
-  const cor=score>=80?'#10b981':score>=50?'#f59e0b':'#ef4444';
-  const label=score>=80?'🟢 Bom':score>=50?'🟡 Médio':'🔴 Precisa melhorar';
-  document.getElementById('score-status').textContent=label;
-  document.getElementById('score-status').style.color=cor;
-  const arc=document.getElementById('score-arc');
-  arc.style.stroke=cor;
-  arc.style.strokeDashoffset=314-(score/100)*314;
-  document.getElementById('count-bom').textContent=d.positivos?.length||0;
-  document.getElementById('count-aviso').textContent=d.avisos?.length||0;
-  document.getElementById('count-problema').textContent=d.problemas?.length||0;
+function renderTudo(d) {
+  document.getElementById('seo-resultado').style.display = 'block';
+  window.scrollTo({top: document.getElementById('seo-resultado').offsetTop - 80, behavior:'smooth'});
 
-  // Análise IA
+  const score = d.score_geral || 0;
+  const cor = score>=80?'#10b981':score>=50?'#f59e0b':'#ef4444';
+  const arc = document.getElementById('score-arc');
+  arc.style.stroke = cor;
+  arc.style.strokeDashoffset = 326.7 - (score/100)*326.7;
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-url').textContent = d.url;
+  document.getElementById('score-ts').textContent = `Analisado em ${d.timestamp} — ${d.tempo_analise}s`;
+  const verd = score>=80?'🟢 Bom — página bem otimizada':score>=50?'🟡 Médio — há oportunidades':'🔴 Crítico — ação urgente necessária';
+  document.getElementById('score-verdict').textContent = verd;
+  document.getElementById('score-verdict').style.color = cor;
+  document.getElementById('cnt-ok').textContent = d.positivos?.length||0;
+  document.getElementById('cnt-warn').textContent = d.avisos?.length||0;
+  document.getElementById('cnt-fail').textContent = d.problemas?.length||0;
+
+  // IA
   if (d.analise_ia) {
-    const iaSection = document.getElementById('ia-section');
-    if (iaSection) {
-      iaSection.style.display = 'block';
-      document.getElementById('ia-content').innerHTML = md2html(d.analise_ia);
-    }
+    document.getElementById('ia-box').style.display = 'block';
+    document.getElementById('ia-body').innerHTML = md2html(d.analise_ia);
   }
-  renderLista('lista-problemas',d.problemas,'❌');
-  renderLista('lista-avisos',d.avisos,'⚠️');
-  renderListaOk('lista-positivos',d.positivos,'✅');
-  const m=d.meta||{};
-  document.getElementById('meta-title').textContent=m.title||'(ausente)';
-  document.getElementById('meta-title-chars').textContent=`${m.title_len||0} chars`;
-  document.getElementById('meta-title-bar').style.width=Math.min(100,((m.title_len||0)/70)*100)+'%';
-  document.getElementById('meta-title-bar').style.background=m.title_status==='bom'?'#10b981':'#f59e0b';
-  document.getElementById('meta-title-status').innerHTML=badge(m.title_status==='bom'?'bom':'aviso',m.title_status==='bom'?'Tamanho ideal':'Ajustar tamanho');
-  document.getElementById('meta-desc').textContent=m.description||'(ausente)';
-  document.getElementById('meta-desc-chars').textContent=`${m.desc_len||0} chars`;
-  document.getElementById('meta-desc-bar').style.width=Math.min(100,((m.desc_len||0)/180)*100)+'%';
-  document.getElementById('meta-desc-bar').style.background=m.desc_status==='bom'?'#10b981':'#f59e0b';
-  document.getElementById('meta-desc-status').innerHTML=badge(m.desc_status==='bom'?'bom':'aviso',m.desc_status==='bom'?'Tamanho ideal':'Ajustar tamanho');
-  document.getElementById('meta-charset').textContent=m.charset||'(não encontrado)';
-  document.getElementById('meta-viewport').textContent=m.viewport||'(ausente)';
-  document.getElementById('meta-robots').textContent=m.robots||'(não definido)';
-  document.getElementById('meta-keywords').textContent=m.keywords||'(não definido)';
-  const tree=document.getElementById('headings-tree');
-  tree.innerHTML='';
-  const h=d.headings||{};
-  ['h1','h2','h3','h4'].forEach(tag=>{
-    (h[tag]||[]).forEach(txt=>{
-      const div=document.createElement('div');
-      div.className=`heading-item heading-${tag}`;
-      div.innerHTML=`<span class="heading-tag">${tag.toUpperCase()}</span><span class="heading-text">${escHtml(txt)}</span>`;
-      tree.appendChild(div);
+
+  // Checks
+  const mkList = (ulId, items, ok) => {
+    const ul = document.getElementById(ulId);
+    if (!items || !items.length) { ul.innerHTML = '<li style="padding:12px;color:var(--text-secondary);font-size:.82rem;font-style:italic">Nenhum item</li>'; return; }
+    ul.innerHTML = items.map((it, i) => mkCheck(it, ok, ulId+'_'+i)).join('');
+  };
+  mkList('ul-fail', d.problemas, false);
+  mkList('ul-warn', d.avisos, false);
+  mkList('ul-ok', d.positivos, true);
+
+  // Meta
+  const m = d.meta || {};
+  document.getElementById('mf-title').textContent = m.title || '(ausente)';
+  document.getElementById('mbar-title').style.width = Math.min(100,((m.title_len||0)/70)*100)+'%';
+  document.getElementById('mbar-title').style.background = m.title_len>=50&&m.title_len<=60?'#10b981':'#f59e0b';
+  document.getElementById('mbar-title-lbl').textContent = (m.title_len||0)+' chars';
+  document.getElementById('mf-title-badge').innerHTML = badge(m.title_status==='bom'?'ok':'warn', m.title_status==='bom'?'Tamanho ideal':'Ajustar: '+(m.title_status||''));
+  document.getElementById('mf-desc').textContent = m.description || '(ausente)';
+  document.getElementById('mbar-desc').style.width = Math.min(100,((m.desc_len||0)/180)*100)+'%';
+  document.getElementById('mbar-desc').style.background = m.desc_len>=120&&m.desc_len<=160?'#10b981':'#f59e0b';
+  document.getElementById('mbar-desc-lbl').textContent = (m.desc_len||0)+' chars';
+  document.getElementById('mf-desc-badge').innerHTML = badge(m.desc_status==='bom'?'ok':'warn', m.desc_status==='bom'?'Tamanho ideal':'Ajustar: '+(m.desc_status||''));
+  document.getElementById('mf-charset').textContent = m.charset||'(não encontrado)';
+  document.getElementById('mf-viewport').textContent = m.viewport||'(ausente)';
+  document.getElementById('mf-robots-meta').textContent = m.robots||'(não definido)';
+  document.getElementById('mf-author').textContent = m.author||'(não definido)';
+
+  // Headings tree
+  const tree = document.getElementById('headings-tree');
+  const h = d.headings || {};
+  let treeHtml = '';
+  ['h1','h2','h3','h4'].forEach(tag => {
+    (h[tag]||[]).forEach(txt => {
+      const indent = {h1:0,h2:20,h3:40,h4:60}[tag];
+      treeHtml += `<div class="h-item" style="margin-left:${indent}px"><span class="h-tag">${tag.toUpperCase()}</span><span>${esc(txt)}</span></div>`;
     });
   });
-  document.getElementById('stat-palavras').textContent=d.conteudo?.n_palavras||0;
-  document.getElementById('stat-imgs').textContent=d.imagens?.total||0;
-  document.getElementById('stat-imgs-semalt').textContent=d.imagens?.sem_alt||0;
-  document.getElementById('stat-links-int').textContent=d.links?.internos||0;
-  document.getElementById('stat-links-ext').textContent=d.links?.externos||0;
-  if((d.imagens?.sem_alt||0)>0){
-    document.getElementById('card-imgs-semalt').style.display='block';
-    document.getElementById('lista-imgs-semalt').innerHTML=(d.imagens.sem_alt_lista||[]).map(s=>`<li>${escHtml(s)}</li>`).join('');
+  tree.innerHTML = treeHtml || '<div style="color:var(--text-secondary);font-size:.83rem;padding:8px">Nenhum heading encontrado</div>';
+
+  // Conteúdo
+  const c = d.conteudo || {}; const img = d.imagens || {}; const lk = d.links || {};
+  document.getElementById('st-palavras').textContent = c.n_palavras||0;
+  document.getElementById('st-imgs').textContent = img.total||0;
+  document.getElementById('st-semalt').textContent = img.sem_alt||0;
+  document.getElementById('st-int').textContent = lk.internos||0;
+  document.getElementById('st-ext').textContent = lk.externos||0;
+  document.getElementById('st-ratio').textContent = (c.ratio_texto_html||0)+'%';
+  if ((img.sem_alt||0)>0) {
+    document.getElementById('imgs-semalt-box').style.display = 'block';
+    document.getElementById('imgs-semalt-list').innerHTML = (img.sem_alt_lista||[]).map(s=>`<li>${esc(s)}</li>`).join('');
   }
-  const can=d.canonical||{};
-  document.getElementById('tec-canonical-val').textContent=can.url||'(ausente)';
-  document.getElementById('tec-canonical-badge').innerHTML=badge(can.tem?'bom':'ruim',can.tem?'Presente':'Ausente');
-  const rob=d.robots||{};
-  document.getElementById('tec-robots-val').textContent=rob.url||'';
-  document.getElementById('tec-robots-badge').innerHTML=badge(rob.tem?'bom':'ruim',rob.tem?'Encontrado':'Não encontrado');
-  if(rob.conteudo){document.getElementById('card-robots-content').style.display='block';document.getElementById('robots-content').textContent=rob.conteudo;}
-  const sit=d.sitemap||{};
-  document.getElementById('tec-sitemap-val').textContent=sit.url||'';
-  document.getElementById('tec-sitemap-badge').innerHTML=badge(sit.tem?'bom':'ruim',sit.tem?'Encontrado':'Não encontrado');
-  const sch=d.schema||{};
-  document.getElementById('tec-schema-val').textContent=sch.tipos?.join(', ')||'(nenhum)';
-  document.getElementById('tec-schema-badge').innerHTML=badge(sch.tem_schema?'bom':'ruim',sch.tem_schema?'Presente':'Ausente');
-  document.getElementById('tec-http-val').textContent=`HTTP ${d.status_http||'—'}`;
-  document.getElementById('tec-http-badge').innerHTML=badge(d.status_http===200?'bom':'ruim',`Status ${d.status_http}`);
-  const mob=d.mobile||{};
-  document.getElementById('tec-mobile-val').textContent=mob.viewport_ok?'Viewport OK':'Sem viewport';
-  document.getElementById('tec-mobile-badge').innerHTML=badge(mob.viewport_ok?'bom':'ruim',mob.viewport_ok?'Mobile friendly':'Não mobile friendly');
-  const perf=d.performance||{};
-  document.getElementById('perf-tempo-val').textContent=perf.tempo_resposta+'s';
-  document.getElementById('perf-tempo-status').innerHTML=badge(perf.tempo_status,perf.tempo_status==='bom'?'< 1s (ideal)':perf.tempo_status==='aviso'?'1-3s':'> 3s (lento)');
-  document.getElementById('perf-tamanho-val').textContent=perf.tamanho_html_kb+' KB';
-  document.getElementById('perf-tamanho-status').innerHTML=badge(perf.tamanho_status,perf.tamanho_status==='bom'?'< 100 KB':'> 100 KB');
-  document.getElementById('perf-https-val').textContent=perf.https?'✅ Sim':'❌ Não';
-  const dicas=[];
-  if(perf.tempo_resposta>=2)dicas.push('Otimize o tempo de resposta do servidor (ideal < 1s)');
-  if(perf.tamanho_html_kb>100)dicas.push('Reduza o tamanho do HTML (ideal < 100 KB)');
-  if(!perf.https)dicas.push('Ative HTTPS com certificado SSL/TLS');
-  dicas.push('Use compressão gzip/brotli para arquivos estáticos');
-  dicas.push('Otimize imagens (use WebP, defina width/height)');
-  dicas.push('Minimize CSS e JavaScript desnecessários');
-  dicas.push('Configure Cache-Control para recursos estáticos');
-  document.getElementById('perf-dicas-lista').innerHTML=dicas.map(d=>`<li>💡 ${d}</li>`).join('');
-  const og=d.open_graph||{};
-  document.getElementById('og-title').textContent=og.title||'(ausente)';
-  document.getElementById('og-desc').textContent=og.description||'(ausente)';
-  document.getElementById('og-image').textContent=og.image||'(ausente)';
-  document.getElementById('og-type').textContent=og.type||'(ausente)';
-  document.getElementById('og-url').textContent=og.url||'(ausente)';
-  document.getElementById('og-title-prev').textContent=og.title||d.meta?.title||'Sem título';
-  document.getElementById('og-desc-prev').textContent=og.description||d.meta?.description||'Sem descrição';
-  try{document.getElementById('og-site').textContent=new URL(d.url).hostname;}catch(e){}
-  if(og.image){document.getElementById('og-image-box').style.backgroundImage=`url(${og.image})`;document.getElementById('og-image-box').style.backgroundSize='cover';}
-  const tc=d.twitter_card||{};
-  document.getElementById('tc-card').textContent=tc.card||'(ausente)';
-  document.getElementById('tc-title').textContent=tc.title||'(ausente)';
-  document.getElementById('tc-desc').textContent=tc.description||'(ausente)';
-  document.getElementById('tc-image').textContent=tc.image||'(ausente)';
-  const seg=d.seguranca||{};
-  document.getElementById('seg-https-badge').innerHTML=badge(seg.https?'bom':'ruim',seg.https?'Ativo':'Inativo');
-  document.getElementById('seg-hsts-badge').innerHTML=badge(seg.hsts?'bom':'aviso',seg.hsts?'Configurado':'Não configurado');
-  document.getElementById('seg-csp-badge').innerHTML=badge(seg.csp?'bom':'aviso',seg.csp?'Configurado':'Não configurado');
-  document.getElementById('seg-xframe-badge').innerHTML=badge(seg.x_frame_options?'bom':'aviso',seg.x_frame_options?'Configurado':'Não configurado');
+
+  // Técnico
+  const can = d.canonical||{}; const rob = d.robots||{}; const sit = d.sitemap||{}; const sch = d.schema||{};
+  document.getElementById('tec-canonical').textContent = can.url||'(ausente)';
+  document.getElementById('tec-canonical-b').innerHTML = badge(can.tem?'ok':'fail', can.tem?'Presente':'Ausente');
+  document.getElementById('tec-robots').textContent = rob.url||'';
+  document.getElementById('tec-robots-b').innerHTML = badge(rob.tem?'ok':'fail', rob.tem?'Encontrado':'Não encontrado');
+  document.getElementById('tec-sitemap').textContent = sit.url||'';
+  document.getElementById('tec-sitemap-b').innerHTML = badge(sit.tem?'ok':'fail', sit.tem?'Encontrado':'Não encontrado');
+  document.getElementById('tec-schema').textContent = (sch.tipos||[]).join(', ')||'(nenhum)';
+  document.getElementById('tec-schema-b').innerHTML = badge(sch.tem_schema?'ok':'fail', sch.tem_schema?'Presente':'Ausente');
+  document.getElementById('tec-status').textContent = 'HTTP '+d.status_http;
+  document.getElementById('tec-status-b').innerHTML = badge(d.status_http===200?'ok':'fail', 'Status '+d.status_http);
+  const mob = d.mobile||{};
+  document.getElementById('tec-mobile').textContent = mob.viewport_ok?'Viewport configurado':'Sem viewport';
+  document.getElementById('tec-mobile-b').innerHTML = badge(mob.viewport_ok?'ok':'fail', mob.viewport_ok?'Mobile friendly':'Não mobile friendly');
+  document.getElementById('tec-faq').textContent = sch.tem_faq?'FAQPage presente':'Ausente';
+  document.getElementById('tec-faq-b').innerHTML = badge(sch.tem_faq?'ok':'warn', sch.tem_faq?'Rich snippets OK':'Oportunidade perdida');
+  document.getElementById('tec-org').textContent = sch.tem_organization?'Organization presente':'Ausente';
+  document.getElementById('tec-org-b').innerHTML = badge(sch.tem_organization?'ok':'warn', sch.tem_organization?'E-E-A-T melhorado':'Implementar');
+  if (rob.conteudo) {
+    document.getElementById('robots-content-box').style.display = 'block';
+    document.getElementById('robots-pre').textContent = rob.conteudo;
+  }
+
+  // Performance
+  const perf = d.performance||{};
+  document.getElementById('pf-tempo').textContent = perf.tempo_resposta+'s';
+  document.getElementById('pf-tempo-b').innerHTML = badge(perf.tempo_status, perf.tempo_status==='bom'?'< 1s':perf.tempo_status==='aviso'?'1-3s':'> 3s');
+  document.getElementById('pf-size').textContent = perf.tamanho_html_kb+' KB';
+  document.getElementById('pf-size-b').innerHTML = badge(perf.tamanho_status, perf.tamanho_status);
+  document.getElementById('pf-https').textContent = perf.https?'✅ Ativo':'❌ Inativo';
+  document.getElementById('pf-gzip').textContent = perf.gzip?'✅ Ativo':'❌ Inativo';
+  document.getElementById('pf-req').textContent = perf.n_total_requests;
+  document.getElementById('pf-req-b').innerHTML = badge(perf.requests_status, perf.requests_status);
+  document.getElementById('pf-block').textContent = perf.render_blocking+' scripts';
+  document.getElementById('pf-gtm').textContent = perf.tem_gtm?perf.gtm_id:perf.tem_ga?'GA ativo':'Não detectado';
+  document.getElementById('pf-font').textContent = perf.tem_font_display?'✅ swap ativo':'❌ Ausente';
+
+  // Social
+  const og = d.open_graph||{}; const tc = d.twitter_card||{};
+  document.getElementById('og-title').textContent = og.title||'(ausente)';
+  document.getElementById('og-desc').textContent = og.description||'(ausente)';
+  document.getElementById('og-image').textContent = og.image||'(ausente)';
+  document.getElementById('og-type').textContent = og.type||'(ausente)';
+  document.getElementById('og-title-prev').textContent = og.title||m.title||'Sem título';
+  document.getElementById('og-desc-prev').textContent = og.description||m.description||'Sem descrição';
+  try { document.getElementById('og-domain').textContent = new URL(d.url).hostname; } catch(e){}
+  if (og.image) { document.getElementById('og-img-prev').style.backgroundImage = `url(${og.image})`; document.getElementById('og-img-prev').style.backgroundSize = 'cover'; }
+  document.getElementById('tc-card').textContent = tc.card||'(ausente)';
+  document.getElementById('tc-title').textContent = tc.title||'(ausente)';
+  document.getElementById('tc-desc').textContent = tc.description||'(ausente)';
+  document.getElementById('tc-image').textContent = tc.image||'(ausente)';
+
+  // Segurança
+  const seg = d.seguranca||{};
+  document.getElementById('seg-https-b').innerHTML = badge(seg.https?'ok':'fail', seg.https?'Ativo':'Inativo');
+  document.getElementById('seg-hsts-b').innerHTML = badge(seg.hsts?'ok':'warn', seg.hsts?'Configurado':'Ausente');
+  document.getElementById('seg-csp-b').innerHTML = badge(seg.csp?'ok':'warn', seg.csp?'Configurado':'Ausente');
+  document.getElementById('seg-xframe-b').innerHTML = badge(seg.x_frame_options?'ok':'warn', seg.x_frame_options?'Configurado':'Ausente');
+  document.getElementById('seg-mixed-b').innerHTML = badge(!seg.mixed_content?'ok':'fail', !seg.mixed_content?'Não detectado':'Detectado!');
 }
 
-function renderLista(id,items,icon){
-  const ul=document.getElementById(id);
-  if(!items||!items.length){ul.innerHTML='<li style="color:var(--text-secondary);font-style:italic;font-size:.82rem">Nenhum item</li>';return;}
-  ul.innerHTML=items.map((it,idx)=>{
-    const uid=id+'_'+idx;
-    return `<li id="check-item-${uid}" class="check-list-item">
-      <span class="item-nome"
-        onmouseenter="mostrarTooltip(event,'${it.item.replace(/'/g,"\'")}',${'false'})"
-        onmousemove="posicionarTooltip(event)"
-        onmouseleave="esconderTooltip()"
-        onclick="togglePainel('${uid}','${it.item.replace(/'/g,"\'")}',dadosResultado)"
-        style="cursor:pointer"
-      >${icon} ${escHtml(it.item)} <span style="font-size:.7rem;color:var(--text-secondary)">ℹ️</span></span>
-      <span class="item-desc">${escHtml(it.desc)}</span>
-    </li>`;
-  }).join('');
-}
-
-function renderListaOk(id,items,icon){
-  const ul=document.getElementById(id);
-  if(!items||!items.length){ul.innerHTML='<li style="color:var(--text-secondary);font-style:italic;font-size:.82rem">Nenhum item</li>';return;}
-  ul.innerHTML=items.map((it,idx)=>{
-    const uid=id+'_'+idx;
-    return `<li id="check-item-${uid}" class="check-list-item">
-      <span class="item-nome"
-        onmouseenter="mostrarTooltip(event,'${it.item.replace(/'/g,"\'")}',${'true'})"
-        onmousemove="posicionarTooltip(event)"
-        onmouseleave="esconderTooltip()"
-        onclick="togglePainel('${uid}','${it.item.replace(/'/g,"\'")}',dadosResultado)"
-        style="cursor:pointer"
-      >${icon} ${escHtml(it.item)} <span style="font-size:.7rem;color:var(--text-secondary)">ℹ️</span></span>
-      <span class="item-desc">${escHtml(it.desc)}</span>
-    </li>`;
-  }).join('');
-}
-
-function badge(status,texto){
-  const cls={bom:'badge-bom',ruim:'badge-ruim',aviso:'badge-aviso',medio:'badge-aviso'}[status]||'badge-aviso';
-  return `<span class="tec-badge ${cls}">${texto}</span>`;
-}
-
-function escHtml(t){
-  if(!t)return'';
-  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click',function(){
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+// Tabs
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
     this.classList.add('active');
     document.getElementById('tab-'+this.dataset.tab).classList.add('active');
   });
 });
 
-
-function md2html(md) {
-  return md
-    .replace(/## (.*)/g,'<h2>$1</h2>')
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/\n\d+\. /g,'<br>• ')
-    .replace(/\n- /g,'<br>• ')
-    .replace(/\n/g,'<br>');
+function badge(status, txt) {
+  const cls = {ok:'badge-ok',fail:'badge-fail',warn:'badge-warn',bom:'badge-ok',ruim:'badge-fail',medio:'badge-warn',aviso:'badge-warn'}[status]||'badge-warn';
+  return `<span class="badge ${cls}">${txt}</span>`;
 }
-
-function gerarPDF(){
-  if(!dadosResultado)return;
-  const d=dadosResultado;
-  const score=d.score_geral||0;
-  const cor=score>=80?'#10b981':score>=50?'#f59e0b':'#ef4444';
-  const win=window.open('','_blank');
-  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório SEO — ${d.url}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a2e;background:#fff;padding:40px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #6366f1;padding-bottom:20px;margin-bottom:24px}
-.header h1{font-size:22px;color:#6366f1}.header .meta{text-align:right;color:#666;font-size:11px}
-.score-box{display:flex;align-items:center;gap:20px;background:#f8f9ff;border-radius:12px;padding:20px 24px;margin-bottom:24px;border-left:6px solid ${cor}}
-.score-num{font-size:48px;font-weight:900;color:${cor}}.score-info h2{font-size:18px}.score-info p{color:#666;font-size:11px;margin-top:4px}
-.section{margin-bottom:24px;page-break-inside:avoid}.section h2{font-size:14px;font-weight:700;color:#6366f1;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:12px}
-.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.check-item{display:flex;align-items:flex-start;gap:8px;padding:8px;border-radius:6px;font-size:11px}
-.check-item.ok{background:#f0fdf4}.check-item.fail{background:#fef2f2}.check-item.warn{background:#fffbeb}
-.check-icon{font-size:14px;flex-shrink:0}.check-text strong{display:block;font-size:11px}.check-text span{color:#666}
-table{width:100%;border-collapse:collapse;font-size:11px}th{background:#f3f4f6;padding:8px 10px;text-align:left;font-weight:600}
-td{padding:7px 10px;border-bottom:1px solid #f3f4f6}
-.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600}
-.badge-ok{background:#d1fae5;color:#065f46}.badge-fail{background:#fee2e2;color:#991b1b}.badge-warn{background:#fef3c7;color:#92400e}
-.footer{margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;color:#999;font-size:10px;text-align:center}
-@media print{body{padding:20px}}</style></head><body>
-<div class="header"><div><h1>📊 Relatório de SEO</h1><p style="color:#666;margin-top:4px;font-size:11px">${d.url}</p></div>
-<div class="meta"><div>Selenio Analytics</div><div>${d.timestamp}</div><div>Análise em ${d.tempo_analise}s</div></div></div>
-<div class="score-box"><div class="score-num">${score}</div><div class="score-info">
-<h2>Score Geral de SEO</h2>
-<p>${score>=80?'✅ Bom — Página bem otimizada':score>=50?'⚠️ Médio — Há oportunidades de melhoria':'❌ Ruim — Ações urgentes necessárias'}</p>
-<p style="margin-top:8px">✅ ${d.positivos?.length||0} OK &nbsp;|&nbsp; ⚠️ ${d.avisos?.length||0} avisos &nbsp;|&nbsp; ❌ ${d.problemas?.length||0} problemas</p>
-</div></div>
-<div class="section"><h2>Checklist Completo</h2><div class="check-grid">
-${(d.checklist||[]).map(c=>`<div class="check-item ${c.ok?'ok':c.peso>=7?'fail':'warn'}"><span class="check-icon">${c.ok?'✅':c.peso>=7?'❌':'⚠️'}</span><div class="check-text"><strong>${c.nome}</strong><span>${c.desc}</span></div></div>`).join('')}
-</div></div>
-<div class="section"><h2>Meta Tags</h2><table>
-<tr><th>Tag</th><th>Valor</th><th>Status</th></tr>
-<tr><td><strong>Title</strong></td><td>${d.meta?.title||'(ausente)'}</td><td><span class="badge ${d.meta?.title_status==='bom'?'badge-ok':'badge-warn'}">${d.meta?.title_len||0} chars</span></td></tr>
-<tr><td><strong>Description</strong></td><td>${d.meta?.description||'(ausente)'}</td><td><span class="badge ${d.meta?.desc_status==='bom'?'badge-ok':'badge-warn'}">${d.meta?.desc_len||0} chars</span></td></tr>
-<tr><td><strong>Charset</strong></td><td>${d.meta?.charset||'—'}</td><td></td></tr>
-<tr><td><strong>Viewport</strong></td><td>${d.meta?.viewport||'(ausente)'}</td><td></td></tr>
-</table></div>
-<div class="section"><h2>SEO Técnico</h2><table>
-<tr><th>Item</th><th>Status</th><th>Detalhe</th></tr>
-<tr><td>Canonical</td><td><span class="badge ${d.canonical?.tem?'badge-ok':'badge-fail'}">${d.canonical?.tem?'Presente':'Ausente'}</span></td><td>${d.canonical?.url||'—'}</td></tr>
-<tr><td>robots.txt</td><td><span class="badge ${d.robots?.tem?'badge-ok':'badge-fail'}">${d.robots?.tem?'OK':'Não encontrado'}</span></td><td></td></tr>
-<tr><td>sitemap.xml</td><td><span class="badge ${d.sitemap?.tem?'badge-ok':'badge-fail'}">${d.sitemap?.tem?'OK':'Não encontrado'}</span></td><td></td></tr>
-<tr><td>Schema</td><td><span class="badge ${d.schema?.tem_schema?'badge-ok':'badge-fail'}">${d.schema?.tem_schema?'Presente':'Ausente'}</span></td><td>${d.schema?.tipos?.join(', ')||'—'}</td></tr>
-<tr><td>HTTPS</td><td><span class="badge ${d.performance?.https?'badge-ok':'badge-fail'}">${d.performance?.https?'Ativo':'Inativo'}</span></td><td></td></tr>
-<tr><td>Mobile</td><td><span class="badge ${d.mobile?.viewport_ok?'badge-ok':'badge-fail'}">${d.mobile?.viewport_ok?'OK':'Não OK'}</span></td><td></td></tr>
-</table></div>
-<div class="section"><h2>Performance</h2><table>
-<tr><th>Métrica</th><th>Valor</th><th>Status</th></tr>
-<tr><td>Tempo Resposta</td><td>${d.performance?.tempo_resposta}s</td><td><span class="badge ${d.performance?.tempo_status==='bom'?'badge-ok':d.performance?.tempo_status==='aviso'?'badge-warn':'badge-fail'}">${d.performance?.tempo_status}</span></td></tr>
-<tr><td>Tamanho HTML</td><td>${d.performance?.tamanho_html_kb} KB</td><td><span class="badge ${d.performance?.tamanho_status==='bom'?'badge-ok':'badge-warn'}">${d.performance?.tamanho_status}</span></td></tr>
-</table></div>
-<div class="section"><h2>Segurança</h2><table>
-<tr><th>Header</th><th>Status</th></tr>
-<tr><td>HTTPS</td><td><span class="badge ${d.seguranca?.https?'badge-ok':'badge-fail'}">${d.seguranca?.https?'Ativo':'Inativo'}</span></td></tr>
-<tr><td>HSTS</td><td><span class="badge ${d.seguranca?.hsts?'badge-ok':'badge-warn'}">${d.seguranca?.hsts?'Configurado':'Não configurado'}</span></td></tr>
-<tr><td>CSP</td><td><span class="badge ${d.seguranca?.csp?'badge-ok':'badge-warn'}">${d.seguranca?.csp?'Configurado':'Não configurado'}</span></td></tr>
-<tr><td>X-Frame-Options</td><td><span class="badge ${d.seguranca?.x_frame_options?'badge-ok':'badge-warn'}">${d.seguranca?.x_frame_options?'Configurado':'Não configurado'}</span></td></tr>
-</table></div>
-<div class="footer">Relatório gerado por Selenio Analytics — ${d.url} — ${d.timestamp}</div>
-</body></html>`);
-  win.document.close();
-  win.focus();
-  setTimeout(()=>win.print(),800);
+function esc(t) { if(!t)return''; return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc4(t) { return String(t||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+function md2html(md) {
+  return md.replace(/## (.*)/g,'<h2>$1</h2>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n\d+\. /g,'<br>• ').replace(/\n- /g,'<br>• ').replace(/\n/g,'<br>');
+}
+function gerarPDF() {
+  if (!dadosResultado) return;
+  const d = dadosResultado; const score = d.score_geral||0;
+  const cor = score>=80?'#10b981':score>=50?'#f59e0b':'#ef4444';
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>SEO — ${d.url}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a2e;padding:36px}.header{border-bottom:3px solid #6366f1;padding-bottom:14px;margin-bottom:18px}.header h1{font-size:18px;color:#6366f1}.sub{color:#666;font-size:10px;margin-top:3px}.score-box{background:#f8f9ff;border-left:6px solid ${cor};border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;gap:16px;align-items:center}.sn{font-size:40px;font-weight:900;color:${cor}}.si p{color:#666;font-size:10px;margin-top:3px}h2{font-size:12px;color:#6366f1;border-bottom:1px solid #e5e7eb;padding-bottom:4px;margin:16px 0 8px}table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}th{background:#f3f4f6;padding:6px 8px;text-align:left;font-weight:600}td{padding:5px 8px;border-bottom:1px solid #f3f4f6}.b{display:inline-block;padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700}.ok{background:#d1fae5;color:#065f46}.fail{background:#fee2e2;color:#991b1b}.warn{background:#fef3c7;color:#92400e}.grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}.ci{display:flex;gap:5px;padding:4px 6px;border-radius:4px;font-size:10px}.ci.ok{background:#f0fdf4}.ci.fail{background:#fef2f2}.ci.warn{background:#fffbeb}.ia{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:6px;padding:12px;margin-bottom:14px;font-size:10px;line-height:1.6}.footer{margin-top:28px;border-top:1px solid #e5e7eb;padding-top:10px;color:#999;font-size:9px;text-align:center}@media print{body{padding:20px}}</style></head><body><div class="header"><h1>📊 Relatório de SEO</h1><div class="sub">${d.url} — ${d.timestamp} — Selenio Analytics</div></div><div class="score-box"><div class="sn">${score}</div><div class="si"><strong style="font-size:14px">Score SEO: ${score}/100</strong><p>✅ ${d.positivos?.length||0} OK | ⚠️ ${d.avisos?.length||0} avisos | ❌ ${d.problemas?.length||0} problemas</p><p>Análise em ${d.tempo_analise}s</p></div></div>${d.analise_ia?`<h2>🤖 Análise de IA</h2><div class="ia">${d.analise_ia.replace(/\n/g,'<br>').replace(/## /g,'<strong>').replace(/\*\*/g,'')}</div>`:''}<h2>🏷️ Meta Tags</h2><table><tr><th>Tag</th><th>Valor</th><th>Status</th></tr><tr><td><b>Title</b></td><td>${d.meta?.title||'(ausente)'}</td><td><span class="b ${d.meta?.title_len>=50&&d.meta?.title_len<=60?'ok':'warn'}">${d.meta?.title_len||0} chars</span></td></tr><tr><td><b>Description</b></td><td>${d.meta?.description||'(ausente)'}</td><td><span class="b ${d.meta?.desc_len>=120&&d.meta?.desc_len<=160?'ok':'warn'}">${d.meta?.desc_len||0} chars</span></td></tr><tr><td><b>H1</b></td><td>${(d.headings?.h1||[])[0]||'(ausente)'}</td><td><span class="b ${d.headings?.h1_count==1?'ok':'fail'}">${d.headings?.h1_count||0} H1(s)</span></td></tr><tr><td><b>Charset</b></td><td>${d.meta?.charset||'—'}</td><td></td></tr></table><h2>⚙️ Técnico</h2><table><tr><th>Item</th><th>Status</th><th>Detalhe</th></tr><tr><td>Canonical</td><td><span class="b ${d.canonical?.tem?'ok':'fail'}">${d.canonical?.tem?'OK':'Ausente'}</span></td><td>${d.canonical?.url||'—'}</td></tr><tr><td>robots.txt</td><td><span class="b ${d.robots?.tem?'ok':'fail'}">${d.robots?.tem?'OK':'Ausente'}</span></td><td></td></tr><tr><td>sitemap.xml</td><td><span class="b ${d.sitemap?.tem?'ok':'fail'}">${d.sitemap?.tem?'OK':'Ausente'}</span></td><td></td></tr><tr><td>Schema</td><td><span class="b ${d.schema?.tem_schema?'ok':'fail'}">${d.schema?.tem_schema?'OK':'Ausente'}</span></td><td>${(d.schema?.tipos||[]).join(', ')||'—'}</td></tr><tr><td>HTTPS</td><td><span class="b ${d.performance?.https?'ok':'fail'}">${d.performance?.https?'Ativo':'Inativo'}</span></td><td></td></tr></table><h2>⚡ Performance</h2><table><tr><th>Métrica</th><th>Valor</th><th>Status</th></tr><tr><td>Tempo resposta</td><td>${d.performance?.tempo_resposta}s</td><td><span class="b ${d.performance?.tempo_status=='bom'?'ok':d.performance?.tempo_status=='aviso'?'warn':'fail'}">${d.performance?.tempo_status}</span></td></tr><tr><td>Tamanho HTML</td><td>${d.performance?.tamanho_html_kb} KB</td><td></td></tr><tr><td>Compressão</td><td>${d.performance?.gzip?'Ativo':'Inativo'}</td><td><span class="b ${d.performance?.gzip?'ok':'warn'}">${d.performance?.gzip?'OK':'Ausente'}</span></td></tr><tr><td>Total requests</td><td>${d.performance?.n_total_requests}</td><td></td></tr></table><h2>📋 Checklist (${(d.checklist||[]).length} checks)</h2><div class="grid">${(d.checklist||[]).map(c=>`<div class="ci ${c.ok?'ok':c.peso>=7?'fail':'warn'}"><span>${c.ok?'✅':c.peso>=7?'❌':'⚠️'}</span><div><b>${c.nome}</b><br><span style="color:#6b7280">${c.desc}</span></div></div>`).join('')}</div><div class="footer">Selenio Analytics — ${d.url} — ${d.timestamp}</div></body></html>`);
+  win.document.close(); win.focus(); setTimeout(()=>win.print(),800);
 }
 </script>
 {% endblock %}
-<script src="/static/js/seo_tooltips.js"></script>
