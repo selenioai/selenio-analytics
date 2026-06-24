@@ -125,7 +125,7 @@ def conectar(projeto_id):
     session["gsc_state"]      = state
     session["gsc_projeto_id"] = projeto_id
 
-    callback_url = url_for("gsc.callback", _external=True)
+    callback_url = url_for("gsc.callback", _external=True, _scheme="https")
 
     params = {
         "client_id":             client_id,
@@ -162,7 +162,7 @@ def callback():
         return redirect(url_for("keywords.config", projeto_id=projeto_id or 1))
 
     client_id, client_secret = _get_credenciais_app(current_user.tenant_id)
-    callback_url = url_for("gsc.callback", _external=True)
+    callback_url = url_for("gsc.callback", _external=True, _scheme="https")
 
     # Trocar code por tokens
     resp = requests.post(GOOGLE_TOKEN_URL, data={
