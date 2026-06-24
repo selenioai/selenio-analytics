@@ -67,22 +67,68 @@
     {# ── Seção: GSC ── #}
     <div class="fonte-secao" id="sec-gsc"
          style="display:{{ 'block' if config.fonte == 'gsc' else 'none' }}">
-      <div class="fonte-info-box fonte-em-breve">
-        <h4>🔍 Google Search Console — Em breve</h4>
-        <p>A integração com o GSC está em desenvolvimento. Quando disponível, você poderá:</p>
+      {% set gsc_token = gsc_integracao %}
+      {% if gsc_token %}
+      <div class="fonte-info-box fonte-conectada">
+        <div class="conectado-header">
+          <div class="conectado-avatar">
+            {% if gsc_token.account_avatar_url %}
+            <img src="{{ gsc_token.account_avatar_url }}" alt="" class="avatar-img">
+            {% else %}
+            <div class="avatar-placeholder">G</div>
+            {% endif %}
+          </div>
+          <div>
+            <div class="conectado-nome">{{ gsc_token.account_name }}</div>
+            <div class="conectado-status">✅ Google Search Console conectado</div>
+          </div>
+          <span class="badge-ativo" style="margin-left:auto">Ativo</span>
+        </div>
+        {% if config.gsc_property_url %}
+        <div class="property-selecionada">
+          <span class="property-label">Property:</span>
+          <span class="property-url">{{ config.gsc_property_url }}</span>
+          <a href="{{ url_for('gsc.selecionar_property', projeto_id=projeto.id) }}" class="property-trocar">Trocar</a>
+        </div>
+        {% else %}
+        <div class="property-aviso">
+          ⚠️ Nenhuma property selecionada.
+          <a href="{{ url_for('gsc.selecionar_property', projeto_id=projeto.id) }}">Selecionar agora →</a>
+        </div>
+        {% endif %}
+        {% if gsc_token.ultimo_sync %}
+        <div class="ultimo-sync">Último sync: {{ gsc_token.ultimo_sync.strftime('%d/%m/%Y %H:%M') }}</div>
+        {% endif %}
+      </div>
+      {% if config.gsc_property_url %}
+      <div class="gsc-acoes">
+        <button class="btn btn-gsc" onclick="sincronizarGSC({{ projeto.id }})" id="btn-sync">🔄 Sincronizar agora</button>
+        <div id="sync-resultado" style="display:none" class="sync-resultado"></div>
+      </div>
+      {% endif %}
+      <div style="margin-top:1rem">
+        <form action="{{ url_for('gsc.desconectar', projeto_id=projeto.id) }}" method="POST"
+              onsubmit="return confirm('Desconectar o Google Search Console?')">
+          <button type="submit" class="btn-link-danger">Desconectar GSC</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="fonte-info-box">
+        <h4>🔍 Google Search Console</h4>
+        <p>Conecte sua conta Google para importar posições reais automaticamente.</p>
         <ul>
-          <li>Conectar via OAuth com sua conta Google</li>
-          <li>Importar posições reais direto do Google</li>
-          <li>Sincronizar automaticamente todo dia</li>
+          <li>Dados reais direto do Google — sem estimativas</li>
+          <li>Importa cliques, impressões e posição média</li>
+          <li>Sincronização dos últimos 28 dias</li>
+          <li>100% gratuito</li>
         </ul>
       </div>
-      <div class="form-group">
-        <label>URL da Propriedade GSC</label>
-        <input type="url" name="gsc_property_url"
-               value="{{ config.gsc_property_url or '' }}"
-               placeholder="https://seusite.com.br"
-               class="form-control" disabled>
+      <div style="margin-top:1rem">
+        <a href="{{ url_for('gsc.conectar', projeto_id=projeto.id) }}" class="btn btn-gsc">
+          Conectar com Google 🔍
+        </a>
       </div>
+      {% endif %}
     </div>
 
     {# ── Seção: Scraping ── #}

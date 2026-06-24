@@ -278,7 +278,7 @@ PROVIDERS_INFO = {
         "descricao": "Dados reais do Google via OAuth",
         "icone":     "🔍",
         "gratuito":  True,
-        "status":    "em_breve"
+        "status":    "ativo"
     },
     "scraping": {
         "nome":      "Scraping Google",

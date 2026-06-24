@@ -477,11 +477,19 @@ def config(projeto_id):
         return redirect(url_for("dashboard.index"))
 
     cfg = _get_config(projeto_id)
+    gsc_integracao = db.query_one(
+        """SELECT * FROM api_integracoes
+           WHERE tenant_id=%s AND projeto_id=%s
+             AND provedor='google_gsc' AND ativo=1 AND d_e_l_e_t=0
+           ORDER BY datestamp_insert DESC LIMIT 1""",
+        (current_user.tenant_id, projeto_id)
+    )
     return render_template(
         "keywords/config.html",
         projeto=projeto,
         config=cfg,
-        providers_info=PROVIDERS_INFO
+        providers_info=PROVIDERS_INFO,
+        gsc_integracao=gsc_integracao
     )
 
 
