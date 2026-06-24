@@ -313,6 +313,39 @@
 .seg-desc{font-size:.8rem;color:var(--text-secondary);margin-bottom:8px}
 .seg-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
 @media(max-width:768px){.score-section{flex-direction:column}.resumo-cards{flex-direction:row}.seo-form-row{flex-direction:column}.seo-form-projeto{width:100%}}
+
+<style id="tooltip-styles">
+/* Tooltip SEO */
+#seo-tooltip{position:fixed;z-index:9999;background:#1e1e2e;color:#e2e8f0;border-radius:12px;padding:16px;max-width:340px;font-size:.82rem;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none;display:none;border:1px solid rgba(255,255,255,.1)}
+.tt-header{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.tt-header strong{font-size:.88rem;color:#f1f5f9}
+.tt-body{display:flex;flex-direction:column;gap:8px}
+.tt-row{display:flex;flex-direction:column;gap:2px}
+.tt-lbl{font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em}
+.tt-row p{margin:0;color:#cbd5e1;line-height:1.5}
+.tt-sug p{color:#86efac;font-style:italic}
+/* Painel expansível */
+.check-painel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin:4px 0 8px;font-size:.82rem;line-height:1.6;animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.check-painel code{background:rgba(99,102,241,.1);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:.78rem;display:inline-block;margin:2px 0;word-break:break-all}
+.check-painel pre{margin:8px 0 0}
+.check-painel .barra-wrap{height:6px;background:var(--border);border-radius:3px;margin:6px 0 2px;overflow:hidden}
+.check-painel .barra-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.check-painel .tag-schema{display:inline-block;background:rgba(99,102,241,.15);color:var(--primary);border-radius:4px;padding:2px 8px;font-size:.75rem;margin:2px}
+.check-list-item{padding:8px 0;border-bottom:1px solid var(--border)}
+.check-list-item:last-child{border:none}
+.item-nome{display:block;font-weight:600;color:var(--text-primary);margin-bottom:2px}
+.item-nome:hover{color:var(--primary)}
+.item-desc{font-size:.82rem;color:var(--text-secondary)}
+/* Análise IA */
+.ia-section{background:linear-gradient(135deg,rgba(99,102,241,.08) 0%,rgba(139,92,246,.08) 100%);border:1px solid rgba(99,102,241,.3);border-radius:12px;padding:20px;margin-bottom:20px}
+.ia-section h3{margin:0 0 12px;font-size:.95rem;color:#6366f1}
+.ia-content{font-size:.85rem;line-height:1.8;color:var(--text-primary)}
+.ia-content h2{font-size:.88rem;font-weight:700;color:#6366f1;margin:12px 0 6px}
+.ia-content strong{color:var(--text-primary)}
+.ia-content ul,.ia-content ol{padding-left:18px;margin:4px 0}
+.ia-content li{margin:3px 0}
+</style>
 </style>
 
 <script>
@@ -369,9 +402,18 @@ function renderResultado(d){
   document.getElementById('count-bom').textContent=d.positivos?.length||0;
   document.getElementById('count-aviso').textContent=d.avisos?.length||0;
   document.getElementById('count-problema').textContent=d.problemas?.length||0;
+
+  // Análise IA
+  if (d.analise_ia) {
+    const iaSection = document.getElementById('ia-section');
+    if (iaSection) {
+      iaSection.style.display = 'block';
+      document.getElementById('ia-content').innerHTML = md2html(d.analise_ia);
+    }
+  }
   renderLista('lista-problemas',d.problemas,'❌');
   renderLista('lista-avisos',d.avisos,'⚠️');
-  renderLista('lista-positivos',d.positivos,'✅');
+  renderListaOk('lista-positivos',d.positivos,'✅');
   const m=d.meta||{};
   document.getElementById('meta-title').textContent=m.title||'(ausente)';
   document.getElementById('meta-title-chars').textContent=`${m.title_len||0} chars`;
@@ -465,7 +507,37 @@ function renderResultado(d){
 function renderLista(id,items,icon){
   const ul=document.getElementById(id);
   if(!items||!items.length){ul.innerHTML='<li style="color:var(--text-secondary);font-style:italic;font-size:.82rem">Nenhum item</li>';return;}
-  ul.innerHTML=items.map(i=>`<li><span class="item-nome">${icon} ${escHtml(i.item)}</span>${escHtml(i.desc)}</li>`).join('');
+  ul.innerHTML=items.map((it,idx)=>{
+    const uid=id+'_'+idx;
+    return `<li id="check-item-${uid}" class="check-list-item">
+      <span class="item-nome"
+        onmouseenter="mostrarTooltip(event,'${it.item.replace(/'/g,"\'")}',${'false'})"
+        onmousemove="posicionarTooltip(event)"
+        onmouseleave="esconderTooltip()"
+        onclick="togglePainel('${uid}','${it.item.replace(/'/g,"\'")}',dadosResultado)"
+        style="cursor:pointer"
+      >${icon} ${escHtml(it.item)} <span style="font-size:.7rem;color:var(--text-secondary)">ℹ️</span></span>
+      <span class="item-desc">${escHtml(it.desc)}</span>
+    </li>`;
+  }).join('');
+}
+
+function renderListaOk(id,items,icon){
+  const ul=document.getElementById(id);
+  if(!items||!items.length){ul.innerHTML='<li style="color:var(--text-secondary);font-style:italic;font-size:.82rem">Nenhum item</li>';return;}
+  ul.innerHTML=items.map((it,idx)=>{
+    const uid=id+'_'+idx;
+    return `<li id="check-item-${uid}" class="check-list-item">
+      <span class="item-nome"
+        onmouseenter="mostrarTooltip(event,'${it.item.replace(/'/g,"\'")}',${'true'})"
+        onmousemove="posicionarTooltip(event)"
+        onmouseleave="esconderTooltip()"
+        onclick="togglePainel('${uid}','${it.item.replace(/'/g,"\'")}',dadosResultado)"
+        style="cursor:pointer"
+      >${icon} ${escHtml(it.item)} <span style="font-size:.7rem;color:var(--text-secondary)">ℹ️</span></span>
+      <span class="item-desc">${escHtml(it.desc)}</span>
+    </li>`;
+  }).join('');
 }
 
 function badge(status,texto){
@@ -486,6 +558,16 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.getElementById('tab-'+this.dataset.tab).classList.add('active');
   });
 });
+
+
+function md2html(md) {
+  return md
+    .replace(/## (.*)/g,'<h2>$1</h2>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n\d+\. /g,'<br>• ')
+    .replace(/\n- /g,'<br>• ')
+    .replace(/\n/g,'<br>');
+}
 
 function gerarPDF(){
   if(!dadosResultado)return;
@@ -556,3 +638,4 @@ ${(d.checklist||[]).map(c=>`<div class="check-item ${c.ok?'ok':c.peso>=7?'fail':
 }
 </script>
 {% endblock %}
+<script src="/static/js/seo_tooltips.js"></script>
