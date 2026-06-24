@@ -216,9 +216,9 @@ def salvar(projeto_id):
             flash(f'Keyword "{termo}" já cadastrada.', "warning")
         else:
             db.execute(
-                """INSERT INTO keywords (projeto_id, termo, url_alvo, grupo, pais, usuario_insert)
-                   VALUES (%s,%s,%s,%s,%s,%s)""",
-                (projeto_id, termo, url_alvo, grupo, pais, current_user.id)
+                """INSERT INTO keywords (tenant_id, projeto_id, termo, url_alvo, grupo, pais, usuario_insert)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s)""",
+                (current_user.tenant_id, projeto_id, termo, url_alvo, grupo, pais, current_user.id)
             )
             flash(f'Keyword "{termo}" adicionada.', "success")
 
