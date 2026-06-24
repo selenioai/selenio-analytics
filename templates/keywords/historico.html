@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}Histórico — {{ keyword.termo }}{% endblock %}
+
+{% block content %}
+<div class="hist-page">
+
+  {# ── Breadcrumb ── #}
+  <div class="breadcrumb">
+    <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
+    <span>›</span>
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}">Keywords</a>
+    <span>›</span>
+    <span>{{ keyword.termo }}</span>
+  </div>
+
+  <div class="hist-header">
+    <h1 class="hist-title">📈 {{ keyword.termo }}</h1>
+    {% if keyword.url_alvo %}
+    <a href="{{ keyword.url_alvo }}" target="_blank" class="hist-url-alvo">
+      ↗ {{ keyword.url_alvo }}
+    </a>
+    {% endif %}
+  </div>
+
+  {% if posicoes %}
+
+  {# ── Stats rápidas ── #}
+  {% set posicoes_validas = posicoes | selectattr('posicao') | list %}
+  {% if posicoes_validas %}
+  {% set melhor = posicoes_validas | map(attribute='posicao') | min %}
+  {% set ultima = posicoes_validas[-1].posicao %}
+  {% set primeira = posicoes_validas[0].posicao %}
+  {% set variacao_total = primeira - ultima %}
+  {% endif %}
+
+  <div class="hist-stats">
+    <div class="hstat-card">
+      <div class="hstat-valor">{{ ultima if posicoes_validas else '—' }}</div>
+      <div class="hstat-label">Posição Atual</div>
+    </div>
+    <div class="hstat-card hstat-gold">
+      <div class="hstat-valor">{{ melhor if posicoes_validas else '—' }}</div>
+      <div class="hstat-label">Melhor Posição</div>
+    </div>
+    <div class="hstat-card {% if variacao_total > 0 %}hstat-green{% elif variacao_total < 0 %}hstat-red{% endif %}">
+      <div class="hstat-valor">
+        {% if posicoes_validas %}
+          {% if variacao_total > 0 %}▲{{ variacao_total }}{% elif variacao_total < 0 %}▼{{ variacao_total|abs }}{% else %}={% endif %}
+        {% else %}—{% endif %}
+      </div>
+      <div class="hstat-label">Variação Total</div>
+    </div>
+    <div class="hstat-card">
+      <div class="hstat-valor">{{ posicoes|length }}</div>
+      <div class="hstat-label">Rastreamentos</div>
+    </div>
+  </div>
+
+  {# ── Gráfico ── #}
+  <div class="hist-card">
+    <div class="hist-card-header">
+      <h3>Evolução de Posição</h3>
+      <div class="grafico-filtros">
+        <button class="btn-periodo ativo" onclick="carregarGrafico(30, this)">30 dias</button>
+        <button class="btn-periodo" onclick="carregarGrafico(60, this)">60 dias</button>
+        <button class="btn-periodo" onclick="carregarGrafico(90, this)">90 dias</button>
+      </div>
+    </div>
+    <div class="grafico-wrap">
+      <canvas id="grafico-posicoes"></canvas>
+    </div>
+    <p class="grafico-nota">
+      ⬆️ No gráfico, posições mais altas = melhor ranking (posição 1 está no topo)
+    </p>
+  </div>
+
+  {# ── Tabela histórico ── #}
+  <div class="hist-card">
+    <div class="hist-card-header">
+      <h3>Histórico Detalhado</h3>
+    </div>
+    <div class="hist-table-wrap">
+      <table class="hist-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th class="col-center">Posição</th>
+            <th class="col-center">Variação</th>
+            <th class="col-center">Volume</th>
+            <th class="col-center">KD</th>
+            <th class="col-center">CPC</th>
+            <th>URL Encontrada</th>
+            <th class="col-center">Fonte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i, p in posicoes|enumerate|list|reverse %}
+          {% set pos_anterior = posicoes[loop.index0 - 1].posicao if loop.index0 > 0 else none %}
+          {% set var = (pos_anterior - p.posicao) if (pos_anterior and p.posicao) else none %}
+          <tr>
+            <td class="col-date">{{ p.rastreado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+            <td class="col-center">
+              {% if p.posicao %}
+              <span class="posicao-badge posicao-{{ 'top3' if p.posicao <= 3 else 'top10' if p.posicao <= 10 else 'top30' if p.posicao <= 30 else 'fora' }}">
+                #{{ p.posicao }}
+              </span>
+              {% else %}<span class="col-dim">—</span>{% endif %}
+            </td>
+            <td class="col-center">
+              {% if var is not none %}
+                {% if var > 0 %}<span class="var-up">▲{{ var }}</span>
+                {% elif var < 0 %}<span class="var-down">▼{{ var|abs }}</span>
+                {% else %}<span class="var-eq">—</span>{% endif %}
+              {% else %}<span class="var-eq">—</span>{% endif %}
+            </td>
+            <td class="col-center col-dim">{{ p.volume_busca or '—' }}</td>
+            <td class="col-center">
+              {% if p.dificuldade is not none %}
+              <span class="kd-badge kd-{{ 'easy' if p.dificuldade<=30 else 'medium' if p.dificuldade<=60 else 'hard' }}">
+                {{ p.dificuldade }}
+              </span>
+              {% else %}<span class="col-dim">—</span>{% endif %}
+            </td>
+            <td class="col-center col-dim">
+              {% if p.cpc %}R$ {{ '%.2f'|format(p.cpc) }}{% else %}—{% endif %}
+            </td>
+            <td class="col-url">
+              {% if p.url_encontrada %}
+              <a href="{{ p.url_encontrada }}" target="_blank" class="url-link">
+                {{ p.url_encontrada|replace('https://','') |truncate(45) }}
+              </a>
+              {% else %}<span class="col-dim">—</span>{% endif %}
+            </td>
+            <td class="col-center">
+              <span class="fonte-badge fonte-{{ p.fonte }}">{{ p.fonte }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="hist-empty">
+    <div class="empty-icon">📊</div>
+    <h3>Nenhum rastreamento registrado</h3>
+    <p>Insira a posição desta keyword para começar o histórico.</p>
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}" class="btn btn-primary">
+      ← Voltar
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+.hist-page { padding: 1.5rem; max-width: 1100px; }
+
+.breadcrumb { display: flex; gap: .5rem; font-size: .8rem; color: var(--text-muted,#9ca3af); margin-bottom: 1rem; }
+.breadcrumb a { color: inherit; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+.hist-header { margin-bottom: 1.5rem; }
+.hist-title  { font-size: 1.5rem; font-weight: 700; margin: 0 0 .25rem; }
+.hist-url-alvo { font-size: .875rem; color: var(--text-muted,#6b7280); text-decoration: none; }
+.hist-url-alvo:hover { text-decoration: underline; }
+
+/* Stats */
+.hist-stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.hstat-card {
+  background: var(--card-bg,#fff); border: 1px solid var(--border-color,#e5e7eb);
+  border-radius: 10px; padding: 1rem 1.5rem; text-align: center; min-width: 110px;
+}
+.hstat-gold  { border-color: #f59e0b; }
+.hstat-green { border-color: #10b981; }
+.hstat-red   { border-color: #ef4444; }
+.hstat-valor { font-size: 2rem; font-weight: 800; }
+.hstat-label { font-size: .75rem; color: var(--text-muted,#6b7280); margin-top: .25rem; }
+.hstat-gold  .hstat-valor { color: #d97706; }
+.hstat-green .hstat-valor { color: #059669; }
+.hstat-red   .hstat-valor { color: #dc2626; }
+
+/* Cards */
+.hist-card {
+  background: var(--card-bg,#fff); border: 1px solid var(--border-color,#e5e7eb);
+  border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem;
+}
+.hist-card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.5rem; border-bottom: 1px solid var(--border-color,#e5e7eb);
+}
+.hist-card-header h3 { margin: 0; font-size: 1rem; }
+
+/* Gráfico */
+.grafico-wrap { padding: 1.5rem; height: 280px; position: relative; }
+.grafico-filtros { display: flex; gap: .5rem; }
+.btn-periodo {
+  padding: .25rem .6rem; border-radius: 6px; font-size: .75rem;
+  border: 1px solid var(--border-color,#e5e7eb);
+  background: transparent; cursor: pointer;
+  color: var(--text-secondary,#374151);
+}
+.btn-periodo.ativo {
+  background: var(--color-primary,#3b82f6);
+  border-color: var(--color-primary,#3b82f6); color: #fff;
+}
+.grafico-nota {
+  text-align: center; font-size: .75rem;
+  color: var(--text-muted,#9ca3af); padding: 0 1.5rem 1rem;
+}
+
+/* Tabela */
+.hist-table-wrap { overflow-x: auto; }
+.hist-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.hist-table thead th {
+  background: var(--table-header-bg,#f8fafc); padding: .75rem 1rem;
+  text-align: left; font-size: .75rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-muted,#6b7280);
+  border-bottom: 1px solid var(--border-color,#e5e7eb);
+}
+.hist-table tbody td {
+  padding: .7rem 1rem;
+  border-bottom: 1px solid var(--border-light,#f3f4f6);
+  vertical-align: middle;
+}
+.hist-table tbody tr:last-child td { border-bottom: none; }
+.hist-table tbody tr:hover { background: var(--row-hover,#f8fafc); }
+.col-center { text-align: center; }
+.col-dim    { color: var(--text-muted,#9ca3af); }
+.col-date   { white-space: nowrap; font-size: .8rem; }
+.col-url    { max-width: 240px; }
+
+.posicao-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 42px; padding: .2rem .5rem;
+  border-radius: 6px; font-weight: 700; font-size: .875rem;
+}
+.posicao-top3  { background: #fef3c7; color: #d97706; }
+.posicao-top10 { background: #d1fae5; color: #065f46; }
+.posicao-top30 { background: #dbeafe; color: #1d4ed8; }
+.posicao-fora  { background: #f3f4f6; color: #6b7280; }
+
+.var-up   { color: #059669; font-weight: 700; }
+.var-down { color: #dc2626; font-weight: 700; }
+.var-eq   { color: #9ca3af; }
+
+.kd-badge { display: inline-block; padding: .15rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 700; }
+.kd-easy   { background: #d1fae5; color: #065f46; }
+.kd-medium { background: #fef3c7; color: #92400e; }
+.kd-hard   { background: #fee2e2; color: #991b1b; }
+
+.url-link { color: var(--text-muted,#6b7280); font-size: .8rem; text-decoration: none; }
+.url-link:hover { text-decoration: underline; }
+
+.fonte-badge {
+  display: inline-block; padding: .15rem .5rem;
+  border-radius: 4px; font-size: .7rem; font-weight: 600;
+  background: var(--table-header-bg,#f3f4f6);
+  color: var(--text-muted,#6b7280);
+}
+.fonte-dataforseo { background: #ede9fe; color: #6d28d9; }
+.fonte-gsc        { background: #fef3c7; color: #d97706; }
+.fonte-scraping   { background: #dbeafe; color: #1d4ed8; }
+
+.hist-empty { text-align: center; padding: 4rem 2rem; color: var(--text-muted,#6b7280); }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1rem; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; transition: all .15s;
+}
+.btn-primary { background: var(--color-primary,#3b82f6); color: #fff; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const KW_ID     = {{ keyword.id }};
+const PROJETO_ID = {{ projeto.id }};
+let grafico = null;
+
+async function carregarGrafico(dias=30, btnEl=null) {
+  // Atualizar botões ativos
+  document.querySelectorAll('.btn-periodo').forEach(b => b.classList.remove('ativo'));
+  if (btnEl) btnEl.classList.add('ativo');
+
+  const resp = await fetch(`/keywords/${PROJETO_ID}/api/grafico/${KW_ID}?dias=${dias}`);
+  const data = await resp.json();
+
+  const ctx = document.getElementById('grafico-posicoes').getContext('2d');
+
+  // Inverter eixo Y: posição 1 = melhor = topo
+  const valoresInvertidos = data.valores.map(v => v === null ? null : v);
+
+  if (grafico) grafico.destroy();
+
+  grafico = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Posição',
+        data: valoresInvertidos,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#3b82f6',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.3,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          reverse: true,   // ← posição 1 no topo
+          min: 1,
+          ticks: {
+            stepSize: 5,
+            callback: v => `#${v}`,
+            color: '#9ca3af'
+          },
+          grid: { color: 'rgba(0,0,0,.05)' }
+        },
+        x: {
+          ticks: { color: '#9ca3af', maxTicksLimit: 15 },
+          grid: { display: false }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.raw !== null ? `Posição #${ctx.raw}` : 'Não rastreado'
+          }
+        }
+      }
+    }
+  });
+}
+
+// Carregar ao abrir a página
+carregarGrafico(30, document.querySelector('.btn-periodo'));
+</script>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Configurar Fonte — Keywords{% endblock %}
+
+{% block content %}
+<div class="cfg-page">
+
+  <div class="breadcrumb">
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}">← Keywords</a>
+    <span>›</span>
+    <span>Configurar Fonte</span>
+  </div>
+
+  <h1 class="cfg-title">⚙️ Fonte de Rastreamento</h1>
+  <p class="cfg-subtitle">
+    Escolha como o Selenio vai obter as posições das keywords do projeto
+    <strong>{{ projeto.nome }}</strong>.
+  </p>
+
+  <form action="{{ url_for('keywords.config_salvar', projeto_id=projeto.id) }}" method="POST">
+
+    {# ── Cards de fonte ── #}
+    <div class="fonte-grid">
+      {% for key, info in providers_info.items() %}
+      <label class="fonte-card {% if config.fonte == key %}fonte-card-ativo{% endif %}
+                               {% if info.status != 'ativo' %}fonte-card-disabled{% endif %}">
+        <input type="radio" name="fonte" value="{{ key }}"
+               {% if config.fonte == key %}checked{% endif %}
+               {% if info.status != 'ativo' %}disabled{% endif %}
+               onchange="mostrarSecao(this.value)">
+        <div class="fonte-card-inner">
+          <div class="fonte-icone">{{ info.icone }}</div>
+          <div class="fonte-info">
+            <div class="fonte-nome">{{ info.nome }}</div>
+            <div class="fonte-desc">{{ info.descricao }}</div>
+          </div>
+          <div class="fonte-badges">
+            {% if info.gratuito %}
+            <span class="badge-free">Grátis</span>
+            {% else %}
+            <span class="badge-paid">Pago</span>
+            {% endif %}
+            {% if info.status == 'ativo' %}
+            <span class="badge-ativo">Ativo</span>
+            {% else %}
+            <span class="badge-breve">Em breve</span>
+            {% endif %}
+          </div>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+
+    {# ── Seção: Manual (sem campos extras) ── #}
+    <div class="fonte-secao" id="sec-manual"
+         style="display:{{ 'block' if config.fonte == 'manual' else 'none' }}">
+      <div class="fonte-info-box">
+        <h4>✏️ Como funciona o modo Manual</h4>
+        <ul>
+          <li>Você pesquisa no Google e anota a posição manualmente</li>
+          <li>Clique no botão 📍 em cada keyword para registrar a posição</li>
+          <li>O histórico é preservado a cada registro</li>
+          <li>Ideal para acompanhar poucas keywords com atenção</li>
+        </ul>
+      </div>
+    </div>
+
+    {# ── Seção: GSC ── #}
+    <div class="fonte-secao" id="sec-gsc"
+         style="display:{{ 'block' if config.fonte == 'gsc' else 'none' }}">
+      <div class="fonte-info-box fonte-em-breve">
+        <h4>🔍 Google Search Console — Em breve</h4>
+        <p>A integração com o GSC está em desenvolvimento. Quando disponível, você poderá:</p>
+        <ul>
+          <li>Conectar via OAuth com sua conta Google</li>
+          <li>Importar posições reais direto do Google</li>
+          <li>Sincronizar automaticamente todo dia</li>
+        </ul>
+      </div>
+      <div class="form-group">
+        <label>URL da Propriedade GSC</label>
+        <input type="url" name="gsc_property_url"
+               value="{{ config.gsc_property_url or '' }}"
+               placeholder="https://seusite.com.br"
+               class="form-control" disabled>
+      </div>
+    </div>
+
+    {# ── Seção: Scraping ── #}
+    <div class="fonte-secao" id="sec-scraping"
+         style="display:{{ 'block' if config.fonte == 'scraping' else 'none' }}">
+      <div class="fonte-info-box fonte-em-breve">
+        <h4>🤖 Scraping Google — Em breve</h4>
+        <p>Rastreamento automático via busca no Google. Em desenvolvimento.</p>
+      </div>
+      <div class="form-group">
+        <label>País</label>
+        <select name="scraping_pais" class="form-control" disabled>
+          <option value="br" {% if config.scraping_pais == 'br' %}selected{% endif %}>🇧🇷 Brasil</option>
+          <option value="us" {% if config.scraping_pais == 'us' %}selected{% endif %}>🇺🇸 EUA</option>
+          <option value="pt" {% if config.scraping_pais == 'pt' %}selected{% endif %}>🇵🇹 Portugal</option>
+        </select>
+      </div>
+    </div>
+
+    {# ── Seção: DataForSEO ── #}
+    <div class="fonte-secao" id="sec-dataforseo"
+         style="display:{{ 'block' if config.fonte == 'dataforseo' else 'none' }}">
+      <div class="fonte-info-box fonte-em-breve">
+        <h4>📊 DataForSEO — Em breve</h4>
+        <p>Dados profissionais com posição, volume de busca e dificuldade (KD).</p>
+        <ul>
+          <li>Posições precisas em tempo real</li>
+          <li>Volume de busca mensal</li>
+          <li>Keyword Difficulty (KD)</li>
+          <li>CPC estimado</li>
+          <li>Custo aproximado: ~$0.003 por keyword</li>
+        </ul>
+      </div>
+      <div class="form-group">
+        <label>Login DataForSEO (email)</label>
+        <input type="email" name="dataforseo_login"
+               value="{{ config.dataforseo_login or '' }}"
+               placeholder="seu@email.com"
+               class="form-control" disabled>
+      </div>
+      <div class="form-group">
+        <label>Senha da API DataForSEO</label>
+        <input type="password" name="dataforseo_password"
+               value="{{ '••••••••' if config.dataforseo_password else '' }}"
+               placeholder="Senha da API"
+               class="form-control" disabled>
+      </div>
+    </div>
+
+    <div class="cfg-footer">
+      <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}" class="btn btn-ghost">
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        Salvar Configuração
+      </button>
+    </div>
+  </form>
+
+</div>
+
+<style>
+.cfg-page { padding: 1.5rem; max-width: 720px; }
+.breadcrumb { font-size: .8rem; color: var(--text-muted,#9ca3af); margin-bottom: 1rem; }
+.breadcrumb a { color: inherit; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.cfg-title    { font-size: 1.5rem; font-weight: 700; margin: 0 0 .25rem; }
+.cfg-subtitle { color: var(--text-muted,#6b7280); margin-bottom: 2rem; }
+
+/* Cards de fonte */
+.fonte-grid { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 2rem; }
+.fonte-card {
+  display: block; cursor: pointer;
+  border: 2px solid var(--border-color,#e5e7eb);
+  border-radius: 12px; padding: 1rem 1.25rem;
+  transition: border-color .15s;
+}
+.fonte-card input[type=radio] { display: none; }
+.fonte-card:hover:not(.fonte-card-disabled) { border-color: var(--color-primary,#3b82f6); }
+.fonte-card-ativo   { border-color: var(--color-primary,#3b82f6) !important; background: var(--color-primary-subtle,#eff6ff); }
+.fonte-card-disabled { opacity: .5; cursor: not-allowed; }
+.fonte-card-inner {
+  display: flex; align-items: center; gap: 1rem;
+}
+.fonte-icone { font-size: 1.8rem; flex-shrink: 0; }
+.fonte-info  { flex: 1; }
+.fonte-nome  { font-weight: 700; font-size: .95rem; }
+.fonte-desc  { font-size: .8rem; color: var(--text-muted,#6b7280); margin-top: .15rem; }
+.fonte-badges { display: flex; flex-direction: column; gap: .25rem; align-items: flex-end; }
+
+.badge-free  { background: #d1fae5; color: #065f46; padding: .15rem .5rem; border-radius: 4px; font-size: .7rem; font-weight: 700; }
+.badge-paid  { background: #fef3c7; color: #92400e; padding: .15rem .5rem; border-radius: 4px; font-size: .7rem; font-weight: 700; }
+.badge-ativo { background: #3b82f6; color: #fff;    padding: .15rem .5rem; border-radius: 4px; font-size: .7rem; font-weight: 700; }
+.badge-breve { background: #f3f4f6; color: #9ca3af; padding: .15rem .5rem; border-radius: 4px; font-size: .7rem; font-weight: 700; }
+
+/* Seções de config */
+.fonte-secao { margin-bottom: 1.5rem; }
+.fonte-info-box {
+  background: var(--table-header-bg,#f8fafc);
+  border: 1px solid var(--border-color,#e5e7eb);
+  border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem;
+}
+.fonte-info-box h4 { margin: 0 0 .5rem; font-size: .95rem; }
+.fonte-info-box ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+.fonte-info-box li { font-size: .85rem; color: var(--text-muted,#6b7280); margin-bottom: .25rem; }
+.fonte-info-box p  { font-size: .85rem; color: var(--text-muted,#6b7280); margin: .25rem 0; }
+.fonte-em-breve { border-color: #fde68a; background: #fffbeb; }
+.fonte-em-breve h4 { color: #92400e; }
+
+/* Form */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .35rem; }
+.form-control {
+  width: 100%; padding: .5rem .75rem;
+  border: 1px solid var(--border-color,#e5e7eb); border-radius: 8px;
+  font-size: .875rem; background: var(--input-bg,#fff);
+  color: var(--text-primary,#111); box-sizing: border-box;
+}
+.form-control:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Footer */
+.cfg-footer {
+  display: flex; justify-content: flex-end; gap: .5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color,#e5e7eb);
+}
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1.25rem; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; transition: all .15s;
+}
+.btn-primary { background: var(--color-primary,#3b82f6); color: #fff; }
+.btn-primary:hover { filter: brightness(.9); }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary,#374151);
+  border: 1px solid var(--border-color,#e5e7eb);
+}
+.btn-ghost:hover { background: var(--row-hover,#f3f4f6); }
+</style>
+
+<script>
+function mostrarSecao(fonte) {
+  ['manual','gsc','scraping','dataforseo'].forEach(f => {
+    const el = document.getElementById(`sec-${f}`);
+    if (el) el.style.display = f === fonte ? 'block' : 'none';
+  });
+
+  // Atualizar visual dos cards
+  document.querySelectorAll('.fonte-card').forEach(card => {
+    const radio = card.querySelector('input[type=radio]');
+    card.classList.toggle('fonte-card-ativo', radio && radio.value === fonte);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+{% block title %}Keywords — {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="kw-page">
+
+  {# ── HEADER ── #}
+  <div class="kw-header">
+    <div class="kw-header-left">
+      <h1 class="kw-title">🔑 Keywords</h1>
+      <span class="kw-projeto-badge">{{ projeto.nome }}</span>
+    </div>
+    <div class="kw-header-actions">
+      <a href="{{ url_for('keywords.config', projeto_id=projeto.id) }}"
+         class="btn btn-ghost" title="Configurar fonte de rastreamento">
+        ⚙️ Fonte: <strong>{{ providers_info[config.fonte].nome }}</strong>
+      </a>
+      <button class="btn btn-primary" onclick="abrirModalKeyword()">
+        + Adicionar Keyword
+      </button>
+    </div>
+  </div>
+
+  {# ── ALERTAS ── #}
+  {% if alertas %}
+  <div class="kw-alertas">
+    {% for alerta in alertas %}
+    <div class="kw-alerta kw-alerta-{{ 'up' if alerta.tipo in ['subida','entrada_top10'] else 'down' }}"
+         id="alerta-{{ alerta.id }}">
+      <span class="alerta-icone">
+        {{ '📈' if alerta.tipo in ['subida','entrada_top10'] else '📉' }}
+      </span>
+      <span class="alerta-texto">
+        <strong>{{ alerta.termo }}</strong>
+        {% if alerta.tipo == 'subida' %}subiu {{ alerta.variacao|abs }} posições{% endif %}
+        {% if alerta.tipo == 'queda' %}caiu {{ alerta.variacao|abs }} posições{% endif %}
+        {% if alerta.tipo == 'entrada_top10' %}entrou no Top 10! 🎉{% endif %}
+        {% if alerta.tipo == 'saiu_top10' %}saiu do Top 10{% endif %}
+        ({{ alerta.posicao_anterior }}→{{ alerta.posicao_atual }})
+      </span>
+      <button class="alerta-close" onclick="lerAlerta({{ alerta.id }}, {{ projeto.id }})">×</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── STATS CARDS ── #}
+  <div class="kw-stats">
+    <div class="kw-stat-card">
+      <div class="stat-valor">{{ stats.total }}</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="kw-stat-card kw-stat-gold">
+      <div class="stat-valor">{{ stats.top3 }}</div>
+      <div class="stat-label">Top 3</div>
+    </div>
+    <div class="kw-stat-card kw-stat-green">
+      <div class="stat-valor">{{ stats.top10 }}</div>
+      <div class="stat-label">Top 10</div>
+    </div>
+    <div class="kw-stat-card kw-stat-gray">
+      <div class="stat-valor">{{ stats.sem_posicao }}</div>
+      <div class="stat-label">Sem posição</div>
+    </div>
+  </div>
+
+  {# ── FILTROS ── #}
+  <div class="kw-filtros">
+    <input type="text" id="filtro-busca" placeholder="🔍 Filtrar keyword..."
+           class="kw-search" oninput="filtrarTabela()">
+    <select id="filtro-grupo" class="kw-select" onchange="filtrarTabela()">
+      <option value="">Todos os grupos</option>
+      {% for g in grupos %}
+      <option value="{{ g }}">{{ g }}</option>
+      {% endfor %}
+    </select>
+    <select id="filtro-posicao" class="kw-select" onchange="filtrarTabela()">
+      <option value="">Todas as posições</option>
+      <option value="top3">Top 3</option>
+      <option value="top10">Top 10</option>
+      <option value="top30">Top 30</option>
+      <option value="sem">Sem posição</option>
+    </select>
+  </div>
+
+  {# ── TABELA ── #}
+  {% if keywords %}
+  <div class="kw-table-wrap">
+    <table class="kw-table" id="tabela-keywords">
+      <thead>
+        <tr>
+          <th>Keyword</th>
+          <th>Grupo</th>
+          <th class="col-center">Posição</th>
+          <th class="col-center">Variação</th>
+          <th class="col-center">Volume</th>
+          <th class="col-center">KD</th>
+          <th>URL Alvo</th>
+          <th>Rastreado em</th>
+          <th class="col-center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kw in keywords %}
+        <tr class="kw-row" id="row-{{ kw.id }}"
+            data-termo="{{ kw.termo }}"
+            data-grupo="{{ kw.grupo or '' }}"
+            data-posicao="{{ kw.posicao or 999 }}">
+
+          {# Keyword #}
+          <td class="col-termo">
+            <span class="termo-texto">{{ kw.termo }}</span>
+            {% if kw.url_encontrada %}
+            <a href="{{ kw.url_encontrada }}" target="_blank"
+               class="termo-url" title="{{ kw.url_encontrada }}">↗</a>
+            {% endif %}
+          </td>
+
+          {# Grupo #}
+          <td>
+            {% if kw.grupo %}
+            <span class="grupo-badge">{{ kw.grupo }}</span>
+            {% else %}
+            <span class="sem-grupo">—</span>
+            {% endif %}
+          </td>
+
+          {# Posição #}
+          <td class="col-center">
+            <span class="posicao-badge posicao-{{ 'top3' if kw.posicao and kw.posicao <= 3 else 'top10' if kw.posicao and kw.posicao <= 10 else 'top30' if kw.posicao and kw.posicao <= 30 else 'fora' if kw.posicao else 'null' }}"
+                  id="posicao-{{ kw.id }}">
+              {% if kw.posicao %}#{{ kw.posicao }}{% else %}—{% endif %}
+            </span>
+          </td>
+
+          {# Variação #}
+          <td class="col-center" id="var-{{ kw.id }}">
+            {% if kw.variacao is not none %}
+              {% if kw.variacao > 0 %}
+              <span class="var-up">▲{{ kw.variacao }}</span>
+              {% elif kw.variacao < 0 %}
+              <span class="var-down">▼{{ kw.variacao|abs }}</span>
+              {% else %}
+              <span class="var-eq">—</span>
+              {% endif %}
+            {% else %}
+            <span class="var-eq">—</span>
+            {% endif %}
+          </td>
+
+          {# Volume #}
+          <td class="col-center col-dim">
+            {{ kw.volume_busca|default('—', true) }}
+          </td>
+
+          {# KD #}
+          <td class="col-center">
+            {% if kw.dificuldade is not none %}
+            <span class="kd-badge kd-{{ 'easy' if kw.dificuldade <= 30 else 'medium' if kw.dificuldade <= 60 else 'hard' }}">
+              {{ kw.dificuldade }}
+            </span>
+            {% else %}
+            <span class="col-dim">—</span>
+            {% endif %}
+          </td>
+
+          {# URL Alvo #}
+          <td class="col-url-alvo">
+            {% if kw.url_alvo %}
+            <a href="{{ kw.url_alvo }}" target="_blank"
+               class="url-alvo-link" title="{{ kw.url_alvo }}">
+              {{ kw.url_alvo|replace('https://','') |replace('http://','') |truncate(35) }}
+            </a>
+            {% else %}
+            <span class="col-dim">—</span>
+            {% endif %}
+          </td>
+
+          {# Rastreado em #}
+          <td class="col-dim col-date">
+            {% if kw.rastreado_em %}
+            {{ kw.rastreado_em.strftime('%d/%m %H:%M') }}
+            {% else %}—{% endif %}
+          </td>
+
+          {# Ações #}
+          <td class="col-center col-acoes">
+            {# Botão rastrear / inserir posição #}
+            {% if config.fonte == 'manual' %}
+            <button class="btn-icon btn-rastrear"
+                    onclick="abrirModalRastrear({{ kw.id }}, '{{ kw.termo|e }}')"
+                    title="Inserir posição">📍</button>
+            {% else %}
+            <button class="btn-icon btn-rastrear"
+                    onclick="rastrearKeyword({{ kw.id }}, {{ projeto.id }})"
+                    title="Rastrear agora">🔄</button>
+            {% endif %}
+
+            {# Histórico #}
+            <a href="{{ url_for('keywords.historico', projeto_id=projeto.id, kw_id=kw.id) }}"
+               class="btn-icon" title="Ver histórico">📈</a>
+
+            {# Editar #}
+            <button class="btn-icon"
+                    onclick="abrirModalKeyword({{ kw.id }}, '{{ kw.termo|e }}', '{{ kw.url_alvo or '' }}', '{{ kw.grupo or '' }}')"
+                    title="Editar">✏️</button>
+
+            {# Deletar #}
+            <button class="btn-icon btn-delete"
+                    onclick="deletarKeyword({{ kw.id }}, {{ projeto.id }}, '{{ kw.termo|e }}')"
+                    title="Remover">🗑</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="kw-empty">
+    <div class="empty-icon">🔑</div>
+    <h3>Nenhuma keyword cadastrada</h3>
+    <p>Adicione keywords para começar a rastrear as posições do projeto.</p>
+    <button class="btn btn-primary" onclick="abrirModalKeyword()">
+      + Adicionar primeira keyword
+    </button>
+  </div>
+  {% endif %}
+
+</div>{# fim kw-page #}
+
+
+{# ═══════════════════════════════════════════ #}
+{# MODAL — ADICIONAR / EDITAR KEYWORD          #}
+{# ═══════════════════════════════════════════ #}
+<div class="modal-overlay" id="modal-keyword" onclick="fecharModal('modal-keyword')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modal-keyword-titulo">Adicionar Keyword</h3>
+      <button class="modal-close" onclick="fecharModal('modal-keyword')">×</button>
+    </div>
+    <form action="{{ url_for('keywords.salvar', projeto_id=projeto.id) }}" method="POST">
+      <input type="hidden" name="id" id="kw-id">
+      <div class="form-group">
+        <label>Termo *</label>
+        <input type="text" name="termo" id="kw-termo"
+               placeholder="ex: contabilidade digital sp"
+               class="form-control" required>
+        <small>Minúsculas, sem pontuação. Como o usuário busca.</small>
+      </div>
+      <div class="form-group">
+        <label>URL Alvo</label>
+        <input type="url" name="url_alvo" id="kw-url-alvo"
+               placeholder="https://seusite.com.br/pagina"
+               class="form-control">
+        <small>Página que deve aparecer no ranking para esta keyword.</small>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Grupo / Cluster</label>
+          <input type="text" name="grupo" id="kw-grupo"
+                 placeholder="ex: serviços, localidade..."
+                 list="lista-grupos"
+                 class="form-control">
+          <datalist id="lista-grupos">
+            {% for g in grupos %}
+            <option value="{{ g }}">
+            {% endfor %}
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label>País</label>
+          <select name="pais" id="kw-pais" class="form-control">
+            <option value="br">🇧🇷 Brasil</option>
+            <option value="us">🇺🇸 EUA</option>
+            <option value="pt">🇵🇹 Portugal</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="fecharModal('modal-keyword')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar Keyword</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+{# ═══════════════════════════════════════════ #}
+{# MODAL — INSERIR POSIÇÃO MANUAL              #}
+{# ═══════════════════════════════════════════ #}
+<div class="modal-overlay" id="modal-rastrear" onclick="fecharModal('modal-rastrear')">
+  <div class="modal-box modal-small" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>📍 Inserir Posição</h3>
+      <button class="modal-close" onclick="fecharModal('modal-rastrear')">×</button>
+    </div>
+    <div class="modal-rastrear-keyword" id="rastrear-termo-display"></div>
+    <div class="form-group" style="margin-top:1rem">
+      <label>Posição atual no Google</label>
+      <input type="number" id="input-posicao"
+             min="1" max="200" placeholder="ex: 7"
+             class="form-control form-control-lg">
+      <small>Digite a posição encontrada na busca. Deixe vazio se não apareceu.</small>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-rastrear')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarPosicaoManual()">Salvar Posição</button>
+    </div>
+  </div>
+</div>
+
+
+{# ═══════════════════════════════════════════ #}
+{# CSS                                         #}
+{# ═══════════════════════════════════════════ #}
+<style>
+/* ── Layout ── */
+.kw-page { padding: 1.5rem; max-width: 1400px; }
+
+.kw-header {
+  display: flex; align-items: center;
+  justify-content: space-between; flex-wrap: wrap;
+  gap: 1rem; margin-bottom: 1.5rem;
+}
+.kw-header-left { display: flex; align-items: center; gap: .75rem; }
+.kw-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+.kw-projeto-badge {
+  background: var(--color-primary-subtle, #e8f4ff);
+  color: var(--color-primary, #1976d2);
+  padding: .2rem .7rem; border-radius: 999px;
+  font-size: .8rem; font-weight: 600;
+}
+.kw-header-actions { display: flex; gap: .5rem; align-items: center; }
+
+/* ── Stats ── */
+.kw-stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.kw-stat-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px; padding: 1rem 1.5rem;
+  text-align: center; min-width: 100px;
+}
+.kw-stat-gold  { border-color: #f59e0b; }
+.kw-stat-green { border-color: #10b981; }
+.kw-stat-gray  { border-color: #9ca3af; }
+.stat-valor { font-size: 2rem; font-weight: 800; line-height: 1; }
+.stat-label { font-size: .75rem; color: var(--text-muted, #6b7280); margin-top: .25rem; }
+.kw-stat-gold  .stat-valor { color: #d97706; }
+.kw-stat-green .stat-valor { color: #059669; }
+
+/* ── Alertas ── */
+.kw-alertas { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+.kw-alerta {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .6rem 1rem; border-radius: 8px; font-size: .85rem;
+}
+.kw-alerta-up   { background: #d1fae5; border: 1px solid #6ee7b7; color: #065f46; }
+.kw-alerta-down { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+.alerta-close {
+  margin-left: auto; background: none; border: none;
+  font-size: 1.1rem; cursor: pointer; opacity: .6;
+}
+.alerta-close:hover { opacity: 1; }
+
+/* ── Filtros ── */
+.kw-filtros { display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.kw-search {
+  flex: 1; min-width: 200px; padding: .5rem .75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px; font-size: .875rem;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #111);
+}
+.kw-select {
+  padding: .5rem .75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px; font-size: .875rem;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #111); cursor: pointer;
+}
+
+/* ── Tabela ── */
+.kw-table-wrap {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px; overflow: hidden; overflow-x: auto;
+}
+.kw-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.kw-table thead th {
+  background: var(--table-header-bg, #f8fafc);
+  padding: .75rem 1rem; text-align: left;
+  font-size: .75rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-muted, #6b7280);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+.kw-table tbody tr:hover { background: var(--row-hover, #f8fafc); }
+.kw-table tbody td {
+  padding: .75rem 1rem;
+  border-bottom: 1px solid var(--border-light, #f3f4f6);
+  vertical-align: middle;
+}
+.kw-table tbody tr:last-child td { border-bottom: none; }
+.col-center { text-align: center; }
+.col-dim    { color: var(--text-muted, #9ca3af); }
+
+/* ── Badges de posição ── */
+.posicao-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 42px; padding: .2rem .5rem;
+  border-radius: 6px; font-weight: 700; font-size: .875rem;
+}
+.posicao-top3   { background: #fef3c7; color: #d97706; }
+.posicao-top10  { background: #d1fae5; color: #065f46; }
+.posicao-top30  { background: #dbeafe; color: #1d4ed8; }
+.posicao-fora   { background: #f3f4f6; color: #6b7280; }
+.posicao-null   { background: transparent; color: #d1d5db; }
+
+/* ── Variação ── */
+.var-up   { color: #059669; font-weight: 700; font-size: .875rem; }
+.var-down { color: #dc2626; font-weight: 700; font-size: .875rem; }
+.var-eq   { color: #9ca3af; }
+
+/* ── KD badge ── */
+.kd-badge {
+  display: inline-block; padding: .15rem .5rem;
+  border-radius: 4px; font-size: .75rem; font-weight: 700;
+}
+.kd-easy   { background: #d1fae5; color: #065f46; }
+.kd-medium { background: #fef3c7; color: #92400e; }
+.kd-hard   { background: #fee2e2; color: #991b1b; }
+
+/* ── Outros ── */
+.grupo-badge {
+  background: var(--color-primary-subtle, #eff6ff);
+  color: var(--color-primary, #3b82f6);
+  padding: .15rem .5rem; border-radius: 4px; font-size: .75rem;
+}
+.sem-grupo { color: var(--text-muted, #d1d5db); }
+.col-termo  { min-width: 220px; }
+.termo-texto { font-weight: 500; }
+.termo-url {
+  margin-left: .4rem; color: var(--text-muted, #9ca3af);
+  text-decoration: none; font-size: .8rem;
+}
+.termo-url:hover { color: var(--color-primary, #3b82f6); }
+.col-url-alvo { max-width: 180px; overflow: hidden; }
+.url-alvo-link {
+  color: var(--text-muted, #6b7280); font-size: .8rem;
+  text-decoration: none; white-space: nowrap;
+}
+.url-alvo-link:hover { text-decoration: underline; }
+.col-date { white-space: nowrap; font-size: .8rem; }
+
+/* ── Ações ── */
+.col-acoes { white-space: nowrap; }
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  padding: .25rem .35rem; border-radius: 4px;
+  font-size: .9rem; opacity: .7; transition: all .15s;
+  text-decoration: none; display: inline-block;
+}
+.btn-icon:hover { opacity: 1; background: var(--row-hover, #f3f4f6); }
+.btn-delete:hover { background: #fee2e2; }
+
+/* ── Empty ── */
+.kw-empty {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--text-muted, #6b7280);
+}
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.kw-empty h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+
+/* ── Modals ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.ativo { display: flex; }
+.modal-box {
+  background: var(--card-bg, #fff);
+  border-radius: 14px; padding: 1.5rem;
+  width: 100%; max-width: 500px; margin: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-small { max-width: 360px; }
+.modal-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 1.25rem;
+}
+.modal-header h3 { margin: 0; font-size: 1.1rem; }
+.modal-close {
+  background: none; border: none; font-size: 1.3rem;
+  cursor: pointer; color: var(--text-muted, #9ca3af);
+  line-height: 1;
+}
+.modal-close:hover { color: var(--text-primary, #111); }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: .5rem;
+  margin-top: 1.5rem; padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+.modal-rastrear-keyword {
+  background: var(--table-header-bg, #f8fafc);
+  border-radius: 8px; padding: .75rem 1rem;
+  font-weight: 600; font-size: 1rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+/* ── Forms ── */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .35rem; }
+.form-group small { color: var(--text-muted, #9ca3af); font-size: .75rem; margin-top: .25rem; display: block; }
+.form-control {
+  width: 100%; padding: .5rem .75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px; font-size: .875rem;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #111);
+  box-sizing: border-box;
+}
+.form-control:focus { outline: none; border-color: var(--color-primary, #3b82f6); }
+.form-control-lg { font-size: 1.5rem; font-weight: 700; text-align: center; padding: .75rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1rem; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; transition: all .15s;
+}
+.btn-primary { background: var(--color-primary, #3b82f6); color: #fff; }
+.btn-primary:hover { filter: brightness(.9); }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary, #374151);
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+.btn-ghost:hover { background: var(--row-hover, #f3f4f6); }
+
+/* ── Row hidden ── */
+.kw-row.hidden { display: none; }
+</style>
+
+
+{# ═══════════════════════════════════════════ #}
+{# JAVASCRIPT                                  #}
+{# ═══════════════════════════════════════════ #}
+<script>
+const PROJETO_ID = {{ projeto.id }};
+let kwIdAtual = null;
+
+// ── Modais ──
+function abrirModalKeyword(id='', termo='', urlAlvo='', grupo='') {
+  document.getElementById('kw-id').value       = id;
+  document.getElementById('kw-termo').value    = termo;
+  document.getElementById('kw-url-alvo').value = urlAlvo;
+  document.getElementById('kw-grupo').value    = grupo;
+  document.getElementById('modal-keyword-titulo').textContent = id ? 'Editar Keyword' : 'Adicionar Keyword';
+  document.getElementById('kw-termo').focus();
+  document.getElementById('modal-keyword').classList.add('ativo');
+}
+
+function abrirModalRastrear(kwId, termo) {
+  kwIdAtual = kwId;
+  document.getElementById('rastrear-termo-display').textContent = termo;
+  document.getElementById('input-posicao').value = '';
+  document.getElementById('modal-rastrear').classList.add('ativo');
+  setTimeout(() => document.getElementById('input-posicao').focus(), 100);
+}
+
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('ativo');
+}
+
+// ── Confirmar posição manual ──
+async function confirmarPosicaoManual() {
+  const posicao = document.getElementById('input-posicao').value;
+  const btn     = document.querySelector('#modal-rastrear .btn-primary');
+  btn.textContent = 'Salvando...';
+  btn.disabled    = true;
+
+  try {
+    const fd = new FormData();
+    if (posicao) fd.append('posicao', posicao);
+
+    const resp = await fetch(`/keywords/${PROJETO_ID}/rastrear/${kwIdAtual}`, {
+      method: 'POST', body: fd
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      atualizarLinhaPosicao(kwIdAtual, data.posicao, data.variacao);
+      fecharModal('modal-rastrear');
+      mostrarToast('Posição salva!', 'success');
+    } else {
+      mostrarToast(data.erro || 'Erro ao salvar', 'error');
+    }
+  } catch(e) {
+    mostrarToast('Erro de conexão', 'error');
+  } finally {
+    btn.textContent = 'Salvar Posição';
+    btn.disabled    = false;
+  }
+}
+
+// ── Rastrear via API ──
+async function rastrearKeyword(kwId, projetoId) {
+  const btn = document.querySelector(`#row-${kwId} .btn-rastrear`);
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  try {
+    const resp = await fetch(`/keywords/${projetoId}/rastrear/${kwId}`, { method: 'POST' });
+    const data = await resp.json();
+    if (data.ok) {
+      atualizarLinhaPosicao(kwId, data.posicao, data.variacao);
+      mostrarToast('Rastreamento concluído!', 'success');
+    } else {
+      mostrarToast(data.erro || 'Erro no rastreamento', 'error');
+    }
+  } catch(e) {
+    mostrarToast('Erro de conexão', 'error');
+  } finally {
+    if (btn) { btn.textContent = '🔄'; btn.disabled = false; }
+  }
+}
+
+// ── Atualizar posição na linha ──
+function atualizarLinhaPosicao(kwId, posicao, variacao) {
+  // Badge posição
+  const badge = document.getElementById(`posicao-${kwId}`);
+  if (badge) {
+    if (posicao) {
+      const cls = posicao <= 3 ? 'top3' : posicao <= 10 ? 'top10' : posicao <= 30 ? 'top30' : 'fora';
+      badge.textContent = `#${posicao}`;
+      badge.className   = `posicao-badge posicao-${cls}`;
+    } else {
+      badge.textContent = '—';
+      badge.className   = 'posicao-badge posicao-null';
+    }
+  }
+
+  // Variação
+  const varEl = document.getElementById(`var-${kwId}`);
+  if (varEl && variacao !== null && variacao !== undefined) {
+    if (variacao > 0)      varEl.innerHTML = `<span class="var-up">▲${variacao}</span>`;
+    else if (variacao < 0) varEl.innerHTML = `<span class="var-down">▼${Math.abs(variacao)}</span>`;
+    else                   varEl.innerHTML = `<span class="var-eq">—</span>`;
+  }
+}
+
+// ── Deletar ──
+async function deletarKeyword(kwId, projetoId, termo) {
+  if (!confirm(`Remover "${termo}"?`)) return;
+  const resp = await fetch(`/keywords/${projetoId}/deletar/${kwId}`, { method: 'POST' });
+  const data = await resp.json();
+  if (data.ok) {
+    const row = document.getElementById(`row-${kwId}`);
+    if (row) row.remove();
+    mostrarToast('Keyword removida.', 'success');
+  }
+}
+
+// ── Alertas ──
+async function lerAlerta(alertaId, projetoId) {
+  await fetch(`/keywords/${projetoId}/alertas/ler/${alertaId}`, { method: 'POST' });
+  const el = document.getElementById(`alerta-${alertaId}`);
+  if (el) el.remove();
+}
+
+// ── Filtros ──
+function filtrarTabela() {
+  const busca   = document.getElementById('filtro-busca').value.toLowerCase();
+  const grupo   = document.getElementById('filtro-grupo').value;
+  const posicao = document.getElementById('filtro-posicao').value;
+
+  document.querySelectorAll('.kw-row').forEach(row => {
+    const termo   = row.dataset.termo.toLowerCase();
+    const gRow    = row.dataset.grupo;
+    const pos     = parseInt(row.dataset.posicao);
+
+    const okBusca  = !busca  || termo.includes(busca);
+    const okGrupo  = !grupo  || gRow === grupo;
+    let   okPosicao = true;
+    if      (posicao === 'top3')  okPosicao = pos <= 3;
+    else if (posicao === 'top10') okPosicao = pos <= 10;
+    else if (posicao === 'top30') okPosicao = pos <= 30;
+    else if (posicao === 'sem')   okPosicao = pos === 999;
+
+    row.classList.toggle('hidden', !(okBusca && okGrupo && okPosicao));
+  });
+}
+
+// ── Toast ──
+function mostrarToast(msg, tipo='success') {
+  const t = document.createElement('div');
+  t.className = `toast toast-${tipo}`;
+  t.textContent = msg;
+  t.style.cssText = `
+    position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999;
+    padding:.75rem 1.25rem; border-radius:10px; font-size:.875rem;
+    font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.15);
+    background:${tipo==='success'?'#10b981':'#ef4444'}; color:#fff;
+    animation: fadeIn .2s ease;
+  `;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── Enter no modal de posição ──
+document.getElementById('input-posicao').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmarPosicaoManual();
+});
+</script>
+{% endblock %}

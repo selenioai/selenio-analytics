@@ -29,7 +29,7 @@
        class="nav-item {% if request.endpoint == 'seo.index' %}active{% endif %}">
       <span class="nav-icon">📊</span> Painel SEO
     </a>
-    <a href="{{ url_for('seo.keywords', projeto_id=projeto.id) }}"
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}"
        class="nav-item {% if 'keyword' in (request.endpoint or '') %}active{% endif %}">
       <span class="nav-icon">🔑</span> Keywords
     </a>
