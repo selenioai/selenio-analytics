@@ -21,6 +21,8 @@ from datetime import datetime, timedelta
 import json
 import db
 from .providers import executar_rastreamento, PROVIDERS_INFO
+from .gsc import bp_gsc
+from .gsc import bp_gsc
 
 bp = Blueprint("keywords", __name__)
 

@@ -1,0 +1,214 @@
+<!-- 
+SUBSTITUIR o bloco "Seção: GSC" no templates/keywords/config.html
+pelo conteúdo abaixo.
+
+Localizar:
+    {# ── Seção: GSC ── #}
+    <div class="fonte-secao" id="sec-gsc" ...
+
+Substituir por:
+-->
+
+    {# ── Seção: GSC ── #}
+    <div class="fonte-secao" id="sec-gsc"
+         style="display:{{ 'block' if config.fonte == 'gsc' else 'none' }}">
+
+      {% set gsc_token = gsc_integracao %}
+
+      {% if gsc_token %}
+      {# ── Conectado ── #}
+      <div class="fonte-info-box fonte-conectada">
+        <div class="conectado-header">
+          <div class="conectado-avatar">
+            {% if gsc_token.account_avatar_url %}
+            <img src="{{ gsc_token.account_avatar_url }}" alt="" class="avatar-img">
+            {% else %}
+            <div class="avatar-placeholder">G</div>
+            {% endif %}
+          </div>
+          <div>
+            <div class="conectado-nome">{{ gsc_token.account_name }}</div>
+            <div class="conectado-status">✅ Google Search Console conectado</div>
+          </div>
+          <span class="badge-ativo" style="margin-left:auto">Ativo</span>
+        </div>
+
+        {% if config.gsc_property_url %}
+        <div class="property-selecionada">
+          <span class="property-label">Property:</span>
+          <span class="property-url">{{ config.gsc_property_url }}</span>
+          <a href="{{ url_for('gsc.selecionar_property', projeto_id=projeto.id) }}"
+             class="property-trocar">Trocar</a>
+        </div>
+        {% else %}
+        <div class="property-aviso">
+          ⚠️ Nenhuma property selecionada.
+          <a href="{{ url_for('gsc.selecionar_property', projeto_id=projeto.id) }}">
+            Selecionar agora →
+          </a>
+        </div>
+        {% endif %}
+
+        {% if gsc_token.ultimo_sync %}
+        <div class="ultimo-sync">
+          Último sync: {{ gsc_token.ultimo_sync.strftime('%d/%m/%Y %H:%M') }}
+        </div>
+        {% endif %}
+      </div>
+
+      {% if config.gsc_property_url %}
+      <div class="gsc-acoes">
+        <button class="btn btn-gsc" onclick="sincronizarGSC({{ projeto.id }})" id="btn-sync">
+          🔄 Sincronizar agora
+        </button>
+        <div id="sync-resultado" style="display:none" class="sync-resultado"></div>
+      </div>
+      {% endif %}
+
+      <div style="margin-top:1rem">
+        <form action="{{ url_for('gsc.desconectar', projeto_id=projeto.id) }}" method="POST"
+              onsubmit="return confirm('Desconectar o Google Search Console?')">
+          <button type="submit" class="btn-link-danger">Desconectar GSC</button>
+        </form>
+      </div>
+
+      {% else %}
+      {# ── Não conectado ── #}
+      <div class="fonte-info-box">
+        <h4>🔍 Google Search Console</h4>
+        <p>Conecte sua conta Google para importar posições reais automaticamente.</p>
+        <ul>
+          <li>Dados reais direto do Google — sem estimativas</li>
+          <li>Importa cliques, impressões e posição média</li>
+          <li>Sincronização dos últimos 28 dias</li>
+          <li>100% gratuito</li>
+        </ul>
+      </div>
+
+      <div class="form-group">
+        <label>Client ID do Google *</label>
+        <input type="text" name="google_client_id"
+               placeholder="xxxx.apps.googleusercontent.com"
+               class="form-control"
+               value="{{ google_client_id or '' }}">
+        <small>Obtido no Google Cloud Console → APIs e Serviços → Credenciais</small>
+      </div>
+      <div class="form-group">
+        <label>Client Secret do Google *</label>
+        <input type="password" name="google_client_secret"
+               placeholder="GOCSPX-..."
+               class="form-control">
+        <small>Gerado junto com o Client ID</small>
+      </div>
+
+      <div style="margin-top:1rem">
+        <a href="{{ url_for('gsc.conectar', projeto_id=projeto.id) }}"
+           class="btn btn-gsc">
+          <svg width="18" height="18" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:.3rem">
+            <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Conectar com Google
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+<!-- 
+TAMBÉM ADICIONAR no bloco <script> do config.html:
+-->
+<script>
+async function sincronizarGSC(projetoId) {
+  const btn = document.getElementById('btn-sync');
+  const resultado = document.getElementById('sync-resultado');
+  
+  btn.textContent = '⏳ Sincronizando...';
+  btn.disabled = true;
+  resultado.style.display = 'none';
+
+  try {
+    const resp = await fetch(`/keywords/${projetoId}/gsc/sincronizar`, { method: 'POST' });
+    const data = await resp.json();
+
+    resultado.style.display = 'block';
+    if (data.ok) {
+      resultado.className = 'sync-resultado sync-ok';
+      resultado.innerHTML = `
+        ✅ <strong>${data.total} keywords</strong> sincronizadas (${data.periodo})
+        ${data.erros.length ? `<br>⚠️ ${data.erros.length} erros: ${data.erros.join(', ')}` : ''}
+      `;
+    } else {
+      resultado.className = 'sync-resultado sync-erro';
+      resultado.textContent = '❌ ' + (data.erro || 'Erro desconhecido');
+    }
+  } catch(e) {
+    resultado.style.display = 'block';
+    resultado.className = 'sync-resultado sync-erro';
+    resultado.textContent = '❌ Erro de conexão';
+  } finally {
+    btn.textContent = '🔄 Sincronizar agora';
+    btn.disabled = false;
+  }
+}
+</script>
+
+<!--
+TAMBÉM ADICIONAR no <style> do config.html:
+-->
+<style>
+.fonte-conectada { border-color: #34d399 !important; background: #f0fdf4 !important; }
+.conectado-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.avatar-img { width: 36px; height: 36px; border-radius: 50%; }
+.avatar-placeholder {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #4285F4; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+}
+.conectado-nome   { font-weight: 700; font-size: .9rem; }
+.conectado-status { font-size: .8rem; color: #059669; }
+
+.property-selecionada {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .85rem; margin-top: .5rem;
+  padding: .5rem .75rem;
+  background: #fff; border-radius: 6px;
+  border: 1px solid #a7f3d0;
+}
+.property-label { font-weight: 600; color: #6b7280; }
+.property-url   { font-family: monospace; font-size: .8rem; flex: 1; }
+.property-trocar { color: #4285F4; text-decoration: none; font-size: .75rem; }
+.property-aviso {
+  margin-top: .5rem; padding: .5rem .75rem;
+  background: #fef3c7; border-radius: 6px;
+  font-size: .85rem; color: #92400e;
+}
+.property-aviso a { color: #d97706; font-weight: 600; }
+.ultimo-sync {
+  margin-top: .5rem; font-size: .75rem;
+  color: #9ca3af;
+}
+.gsc-acoes { margin-top: 1rem; }
+.btn-gsc {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .6rem 1.25rem; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none;
+  background: #4285F4; color: #fff;
+  transition: filter .15s;
+}
+.btn-gsc:hover { filter: brightness(.9); }
+.btn-gsc:disabled { opacity: .6; cursor: not-allowed; }
+.btn-link-danger {
+  background: none; border: none; cursor: pointer;
+  color: #dc2626; font-size: .8rem; text-decoration: underline; padding: 0;
+}
+.sync-resultado {
+  margin-top: .75rem; padding: .75rem 1rem;
+  border-radius: 8px; font-size: .875rem;
+}
+.sync-ok   { background: #d1fae5; color: #065f46; }
+.sync-erro { background: #fee2e2; color: #991b1b; }
+</style>

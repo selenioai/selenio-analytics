@@ -44,6 +44,7 @@ with app.app_context():
 from modules.dashboard      import bp as bp_dash
 from modules.seo            import bp as bp_seo
 from modules.keywords       import bp as bp_keywords
+from modules.keywords.gsc   import bp_gsc
 from modules.billing        import bp as bp_billing
 from modules.admin          import bp as bp_admin
 from modules.configuracoes  import bp as bp_config
@@ -51,6 +52,7 @@ from modules.configuracoes  import bp as bp_config
 app.register_blueprint(bp_dash,    url_prefix="/dashboard")
 app.register_blueprint(bp_seo,     url_prefix="/seo")
 app.register_blueprint(bp_keywords, url_prefix="/keywords")
+app.register_blueprint(bp_gsc, url_prefix="/keywords")
 app.register_blueprint(bp_billing, url_prefix="/billing")
 app.register_blueprint(bp_admin,   url_prefix="/admin")
 app.register_blueprint(bp_config,  url_prefix="/configuracoes")

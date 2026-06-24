@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Selecionar Property — GSC{% endblock %}
+
+{% block content %}
+<div class="gsc-page">
+
+  <div class="breadcrumb">
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}">← Keywords</a>
+    <span>›</span>
+    <a href="{{ url_for('keywords.config', projeto_id=projeto.id) }}">Configurar Fonte</a>
+    <span>›</span>
+    <span>Selecionar Property</span>
+  </div>
+
+  <div class="gsc-header">
+    <div class="gsc-logo">🔍</div>
+    <div>
+      <h1>Google Search Console</h1>
+      <p>Conectado como <strong>{{ integracao.account_name }}</strong></p>
+    </div>
+  </div>
+
+  {% if sites %}
+  <div class="gsc-card">
+    <h3>Selecione a property do seu site</h3>
+    <p class="gsc-subtitle">
+      Encontramos {{ sites|length }} propert{{ 'y' if sites|length == 1 else 'ies' }}
+      na sua conta Google Search Console.
+    </p>
+
+    <form action="{{ url_for('gsc.selecionar_property', projeto_id=projeto.id) }}" method="POST">
+      <div class="sites-lista">
+        {% for site in sites %}
+        <label class="site-card">
+          <input type="radio" name="property_url" value="{{ site.siteUrl }}" required>
+          <div class="site-card-inner">
+            <div class="site-icone">
+              {% if 'sc-domain:' in site.siteUrl %}🌐{% else %}📄{% endif %}
+            </div>
+            <div class="site-info">
+              <div class="site-url">{{ site.siteUrl }}</div>
+              <div class="site-tipo">
+                {% if 'sc-domain:' in site.siteUrl %}
+                  Domain property (cobertura completa)
+                {% else %}
+                  URL prefix property
+                {% endif %}
+              </div>
+            </div>
+            <div class="site-perm">
+              <span class="perm-badge perm-{{ site.permissionLevel|lower|replace(' ','_') }}">
+                {{ site.permissionLevel }}
+              </span>
+            </div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="gsc-footer">
+        <a href="{{ url_for('keywords.config', projeto_id=projeto.id) }}" class="btn btn-ghost">
+          Cancelar
+        </a>
+        <button type="submit" class="btn btn-primary">
+          ✅ Confirmar Property
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% else %}
+  <div class="gsc-card gsc-empty">
+    <div class="empty-icon">⚠️</div>
+    <h3>Nenhuma property encontrada</h3>
+    <p>
+      Sua conta Google não tem nenhuma property verificada no Search Console.<br>
+      Adicione e verifique seu site em
+      <a href="https://search.google.com/search-console" target="_blank">
+        search.google.com/search-console
+      </a>
+      e depois conecte novamente.
+    </p>
+    <div class="gsc-footer" style="justify-content:center">
+      <a href="{{ url_for('gsc.conectar', projeto_id=projeto.id) }}" class="btn btn-primary">
+        🔄 Tentar novamente
+      </a>
+      <a href="{{ url_for('keywords.config', projeto_id=projeto.id) }}" class="btn btn-ghost">
+        Voltar
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+.gsc-page { padding: 1.5rem; max-width: 680px; }
+.breadcrumb { font-size: .8rem; color: var(--text-muted,#9ca3af); margin-bottom: 1.5rem; display: flex; gap: .5rem; }
+.breadcrumb a { color: inherit; text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+.gsc-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+.gsc-logo   { font-size: 2.5rem; }
+.gsc-header h1 { margin: 0; font-size: 1.4rem; }
+.gsc-header p  { margin: .25rem 0 0; color: var(--text-muted,#6b7280); font-size: .9rem; }
+
+.gsc-card {
+  background: var(--card-bg,#fff);
+  border: 1px solid var(--border-color,#e5e7eb);
+  border-radius: 14px; padding: 1.5rem;
+}
+.gsc-card h3      { margin: 0 0 .25rem; font-size: 1.1rem; }
+.gsc-subtitle     { color: var(--text-muted,#6b7280); font-size: .875rem; margin-bottom: 1.5rem; }
+
+.sites-lista { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1.5rem; }
+.site-card {
+  display: block; cursor: pointer;
+  border: 2px solid var(--border-color,#e5e7eb);
+  border-radius: 10px; padding: .875rem 1rem;
+  transition: border-color .15s;
+}
+.site-card:hover { border-color: #4285F4; }
+.site-card input[type=radio] { display: none; }
+.site-card:has(input:checked) {
+  border-color: #4285F4;
+  background: #f0f7ff;
+}
+.site-card-inner {
+  display: flex; align-items: center; gap: 1rem;
+}
+.site-icone { font-size: 1.5rem; flex-shrink: 0; }
+.site-info  { flex: 1; }
+.site-url   { font-weight: 600; font-size: .9rem; word-break: break-all; }
+.site-tipo  { font-size: .75rem; color: var(--text-muted,#9ca3af); margin-top: .15rem; }
+
+.perm-badge {
+  padding: .2rem .6rem; border-radius: 4px;
+  font-size: .7rem; font-weight: 700;
+  background: #d1fae5; color: #065f46;
+}
+.perm-site_owner        { background: #fef3c7; color: #92400e; }
+.perm-site_full_user    { background: #d1fae5; color: #065f46; }
+.perm-site_restricted_user { background: #dbeafe; color: #1d4ed8; }
+
+.gsc-footer {
+  display: flex; justify-content: flex-end; gap: .5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color,#e5e7eb);
+}
+
+.gsc-empty { text-align: center; padding: 2rem; }
+.empty-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.gsc-empty h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+.gsc-empty p  { color: var(--text-muted,#6b7280); font-size: .875rem; line-height: 1.6; }
+.gsc-empty a  { color: #4285F4; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1.25rem; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; transition: all .15s;
+}
+.btn-primary { background: #4285F4; color: #fff; }
+.btn-primary:hover { filter: brightness(.9); }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary,#374151);
+  border: 1px solid var(--border-color,#e5e7eb);
+}
+.btn-ghost:hover { background: var(--row-hover,#f3f4f6); }
+</style>
+{% endblock %}
