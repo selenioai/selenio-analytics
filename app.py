@@ -138,3 +138,14 @@ def server_error(e):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+
+@app.context_processor
+def inject_projeto():
+    from flask_login import current_user
+    if current_user.is_authenticated:
+        projeto = db.query_one(
+            "SELECT * FROM projetos WHERE tenant_id=%s AND D_E_L_E_T=0 ORDER BY nome LIMIT 1",
+            (current_user.tenant_id,)
+        )
+        return {"projeto": projeto}
+    return {"projeto": None}
