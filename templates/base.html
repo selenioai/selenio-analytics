@@ -33,13 +33,9 @@
        class="nav-item {% if 'keyword' in (request.endpoint or '') %}active{% endif %}">
       <span class="nav-icon">🔑</span> Keywords
     </a>
-    <a href="{{ url_for('seo.auditoria', projeto_id=projeto.id) }}"
+    <a href="{{ url_for('seo.index') }}"
        class="nav-item {% if 'auditoria' in (request.endpoint or '') %}active{% endif %}">
       <span class="nav-icon">🔍</span> Auditoria
-    </a>
-    <a href="{{ url_for('seo.gaps', projeto_id=projeto.id) }}"
-       class="nav-item {% if 'gaps' in (request.endpoint or '') %}active{% endif %}">
-      <span class="nav-icon">⚡</span> Concorrentes
     </a>
 
     <!-- Social (quando módulo for ativado) -->
