@@ -463,21 +463,25 @@ function hideTT() { ttTimer = setTimeout(() => { document.getElementById('seo-tt
 function mkCheck(it, ok, uid) {
   const icon = ok ? '✅' : it.peso >= 7 ? '❌' : '⚠️';
   const painel = mkPainel(it.nome);
-  return `<li class="check-li" id="cli-${uid}">
-    <div class="check-li-header"
-      onmouseenter="showTT(event,'${esc4(it.nome)}',${ok})"
-      onmousemove="moveTT(event)"
-      onmouseleave="hideTT()"
-      onclick="toggleLi('${uid}')">
-      <span class="check-li-icon">${icon}</span>
-      <div class="check-li-body">
-        <div class="check-li-nome">${esc(it.nome)} <span class="info-dot">ℹ</span></div>
-        <div class="check-li-desc">${esc(it.desc)}</div>
-      </div>
-      ${painel ? '<span class="check-li-arrow">▶</span>' : ''}
-    </div>
-    ${painel ? `<div class="check-painel">${painel}</div>` : ''}
-  </li>`;
+  const li = document.createElement('li');
+  li.className = 'check-li';
+  li.id = 'cli-' + uid;
+  const header = document.createElement('div');
+  header.className = 'check-li-header';
+  header.innerHTML = `<span class="check-li-icon">${icon}</span><div class="check-li-body"><div class="check-li-nome">${esc(it.nome)} <span class="info-dot">ℹ</span></div><div class="check-li-desc">${esc(it.desc)}</div></div>${painel ? '<span class="check-li-arrow">▶</span>' : ''}`;
+  header.addEventListener('mouseenter', (e) => showTT(e, it.nome, ok));
+  header.addEventListener('mousemove', moveTT);
+  header.addEventListener('mouseleave', hideTT);
+  header.addEventListener('click', () => toggleLi(uid));
+  header.style.cursor = 'pointer';
+  li.appendChild(header);
+  if (painel) {
+    const pDiv = document.createElement('div');
+    pDiv.className = 'check-painel';
+    pDiv.innerHTML = painel;
+    li.appendChild(pDiv);
+  }
+  return li;
 }
 
 function toggleLi(uid) {
@@ -597,8 +601,9 @@ function renderTudo(d) {
   // Checks
   const mkList = (ulId, items, ok) => {
     const ul = document.getElementById(ulId);
+    ul.innerHTML = '';
     if (!items || !items.length) { ul.innerHTML = '<li style="padding:12px;color:var(--text-secondary);font-size:.82rem;font-style:italic">Nenhum item</li>'; return; }
-    ul.innerHTML = items.map((it, i) => mkCheck(it, ok, ulId+'_'+i)).join('');
+    items.forEach((it, i) => { ul.appendChild(mkCheck(it, ok, ulId+'_'+i)); });
   };
   mkList('ul-fail', d.problemas, false);
   mkList('ul-warn', d.avisos, false);
