@@ -102,7 +102,7 @@
       </div>
       {% if config.gsc_property_url %}
       <div class="gsc-acoes">
-        <button class="btn btn-gsc" onclick="sincronizarGSC({{ projeto.id }})" id="btn-sync">🔄 Sincronizar agora</button>
+        <button type="button" class="btn btn-gsc" onclick="sincronizarGSC({{ projeto.id }})" id="btn-sync">🔄 Sincronizar agora</button>
         <div id="sync-resultado" style="display:none" class="sync-resultado"></div>
       </div>
       {% endif %}
@@ -284,4 +284,34 @@ function mostrarSecao(fonte) {
   });
 }
 </script>
+
+<script>
+async function sincronizarGSC(projetoId) {
+  const btn = document.getElementById('btn-sync');
+  const resultado = document.getElementById('sync-resultado');
+  btn.textContent = '⏳ Sincronizando...';
+  btn.disabled = true;
+  resultado.style.display = 'none';
+  try {
+    const resp = await fetch('/keywords/' + projetoId + '/gsc/sincronizar', { method: 'POST' });
+    const data = await resp.json();
+    resultado.style.display = 'block';
+    if (data.ok) {
+      resultado.className = 'sync-resultado sync-ok';
+      resultado.innerHTML = '✅ <strong>' + data.total + ' keywords</strong> sincronizadas (' + data.periodo + ')' + (data.erros.length ? '<br>⚠️ ' + data.erros.length + ' erros' : '');
+    } else {
+      resultado.className = 'sync-resultado sync-erro';
+      resultado.textContent = '❌ ' + (data.erro || 'Erro desconhecido');
+    }
+  } catch(e) {
+    resultado.style.display = 'block';
+    resultado.className = 'sync-resultado sync-erro';
+    resultado.textContent = '❌ Erro de conexão';
+  } finally {
+    btn.textContent = '🔄 Sincronizar agora';
+    btn.disabled = false;
+  }
+}
+</script>
+
 {% endblock %}
