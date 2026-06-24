@@ -25,8 +25,8 @@
     {% if projeto is defined and projeto %}
     <!-- SEO -->
     <div class="nav-section">SEO</div>
-    <a href="{{ url_for('seo.painel', projeto_id=projeto.id) }}"
-       class="nav-item {% if request.endpoint == 'seo.painel' %}active{% endif %}">
+    <a href="{{ url_for('seo.index') }}"
+       class="nav-item {% if request.endpoint == 'seo.index' %}active{% endif %}">
       <span class="nav-icon">📊</span> Painel SEO
     </a>
     <a href="{{ url_for('seo.keywords', projeto_id=projeto.id) }}"

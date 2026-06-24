@@ -13,7 +13,7 @@ def index():
     if not projetos:
         return render_template("dashboard/sem_projeto.html")
     if len(projetos) == 1:
-        return redirect(url_for("seo.painel", projeto_id=projetos[0]["id"]))
+        return redirect(url_for("seo.index"))
     return render_template("dashboard/index.html", projetos=projetos)
 
 @bp.route("/projetos/novo", methods=["GET","POST"])
@@ -38,5 +38,5 @@ def novo_projeto():
             d.get("ga4_property_id"), d.get("meta_page_id"), d.get("linkedin_org_id"),
         ))
         flash("Projeto criado!", "success")
-        return redirect(url_for("seo.painel", projeto_id=row["id"]))
+        return redirect(url_for("seo.index"))
     return render_template("dashboard/novo_projeto.html")
