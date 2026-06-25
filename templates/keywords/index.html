@@ -744,7 +744,7 @@ async function sincronizarTodas(projetoId) {
   btn.disabled = true;
 
   try {
-    const resp = await fetch('/keywords//gsc/sincronizar', { method: 'POST' });
+    const resp = await fetch('/keywords/' + projetoId + '/gsc/sincronizar', { method: 'POST' });
     const data = await resp.json();
     if (data.ok) {
       mostrarToast('✅ ' + data.total + ' keywords sincronizadas!', 'success');
