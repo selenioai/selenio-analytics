@@ -103,9 +103,14 @@ def _buscar_direto(keyword: str, pais: str = "br", num: int = 50) -> str:
     url = f"https://www.google.com.br/search?q={quote_plus(keyword)}&num={num}&gl={pais}&hl=pt-BR"
     
     session = requests.Session()
+    headers = _headers_aleatorios()
+    # Remover Accept-Encoding para receber HTML não comprimido
+    headers.pop("Accept-Encoding", None)
+    headers["Accept-Encoding"] = "identity"
+    
     resp = session.get(
         url,
-        headers=_headers_aleatorios(),
+        headers=headers,
         timeout=15,
         allow_redirects=True
     )
@@ -113,11 +118,17 @@ def _buscar_direto(keyword: str, pais: str = "br", num: int = 50) -> str:
     if resp.status_code != 200:
         raise Exception(f"Google retornou status {resp.status_code}")
     
+    # Decodificar resposta
+    try:
+        html = resp.content.decode("utf-8")
+    except Exception:
+        html = resp.text
+    
     # Verificar se foi bloqueado (CAPTCHA)
-    if "captcha" in resp.text.lower() or "unusual traffic" in resp.text.lower():
+    if "captcha" in html.lower() or "unusual traffic" in html.lower():
         raise Exception("Google bloqueou a requisição (CAPTCHA). Use modo proxy.")
     
-    return resp.text
+    return html
 
 
 # ─────────────────────────────────────────────
