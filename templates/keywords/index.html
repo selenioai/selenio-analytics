@@ -23,7 +23,7 @@
          class="btn btn-ghost" title="Configurar fonte de rastreamento">
         ⚙️ Fonte: <strong>{{ providers_info[config.fonte].nome }}</strong>
       </a>
-      <button type="button" class="btn btn-secondary" onclick="sincronizarTodas()" id="btn-sync-todas">🔄 Sincronizar todas</button>
+      <button type="button" class="btn btn-secondary" onclick="sincronizarTodas({{ projeto.id }})" id="btn-sync-todas">🔄 Sincronizar todas</button>
       <button class="btn btn-primary" onclick="abrirModalKeyword()">
         + Adicionar Keyword
       </button>
@@ -559,6 +559,9 @@
 }
 .btn-primary { background: var(--color-primary, #3b82f6); color: #fff; }
 .btn-primary:hover { filter: brightness(.9); }
+.btn-secondary { background: var(--card-bg,#fff); color: var(--text-secondary,#374151); border: 1px solid var(--border-color,#e5e7eb); }
+.btn-secondary:hover { background: var(--row-hover,#f3f4f6); }
+.btn-primary:hover { filter: brightness(.9); }
 .btn-ghost {
   background: transparent; color: var(--text-secondary, #374151);
   border: 1px solid var(--border-color, #e5e7eb);
@@ -735,7 +738,7 @@ function mostrarToast(msg, tipo='success') {
 }
 
 // ── Sincronizar todas via GSC ──
-async function sincronizarTodas() {
+async function sincronizarTodas(projetoId) {
   const btn = document.getElementById('btn-sync-todas');
   btn.textContent = '⏳ Sincronizando...';
   btn.disabled = true;
