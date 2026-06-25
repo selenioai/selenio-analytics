@@ -1,0 +1,632 @@
+{% extends "base.html" %}
+{% block title %}Concorrentes — {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="conc-page">
+
+  {# ── HEADER ── #}
+  <div class="conc-header">
+    <div class="conc-header-left">
+      <h1 class="conc-title">⚔️ Concorrentes</h1>
+      <span class="conc-projeto-badge">{{ projeto.nome }}</span>
+    </div>
+    <div class="conc-header-actions">
+      <button class="btn btn-primary" onclick="abrirModalConcorrente()">
+        + Adicionar Concorrente
+      </button>
+    </div>
+  </div>
+
+  {# ── STATS ── #}
+  <div class="conc-stats">
+    <div class="cstat-card">
+      <div class="cstat-valor">{{ stats.total_keywords }}</div>
+      <div class="cstat-label">Keywords monitoradas</div>
+    </div>
+    <div class="cstat-card">
+      <div class="cstat-valor">{{ stats.total_concorrentes }}</div>
+      <div class="cstat-label">Concorrentes</div>
+    </div>
+    {% if minha_vis is not none %}
+    <div class="cstat-card cstat-blue">
+      <div class="cstat-valor">{{ minha_vis }}</div>
+      <div class="cstat-label">Minha visibilidade</div>
+    </div>
+    {% endif %}
+    {% for c in concorrentes %}
+    {% if vis_concorrentes[c.id] is not none %}
+    <div class="cstat-card cstat-gray">
+      <div class="cstat-valor cstat-small">{{ vis_concorrentes[c.id] }}</div>
+      <div class="cstat-label">{{ c.nome|truncate(15) }}</div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  {% if not concorrentes %}
+  {# ── EMPTY STATE — sem concorrentes ── #}
+  <div class="conc-empty">
+    <div class="empty-icon">⚔️</div>
+    <h3>Nenhum concorrente cadastrado</h3>
+    <p>Adicione os domínios dos seus principais concorrentes para comparar posições.</p>
+    <button class="btn btn-primary" onclick="abrirModalConcorrente()">
+      + Adicionar primeiro concorrente
+    </button>
+  </div>
+
+  {% elif not keywords %}
+  {# ── EMPTY STATE — sem keywords ── #}
+  <div class="conc-empty">
+    <div class="empty-icon">🔑</div>
+    <h3>Nenhuma keyword cadastrada</h3>
+    <p>Cadastre keywords no módulo de Keywords para comparar com concorrentes.</p>
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}" class="btn btn-primary">
+      Ir para Keywords →
+    </a>
+  </div>
+
+  {% else %}
+  {# ── TABELA COMPARATIVA ── #}
+  <div class="conc-table-wrap">
+    <table class="conc-table">
+      <thead>
+        <tr>
+          <th class="th-keyword">Keyword</th>
+          <th class="th-grupo">Grupo</th>
+          {# Meu site #}
+          <th class="th-site meu-site">
+            <div class="site-header">
+              <span class="site-icone">🏠</span>
+              <span class="site-nome">Meu Site</span>
+            </div>
+          </th>
+          {# Concorrentes #}
+          {% for c in concorrentes %}
+          <th class="th-site">
+            <div class="site-header">
+              <span class="site-icone">⚔️</span>
+              <div>
+                <div class="site-nome">{{ c.nome }}</div>
+                <div class="site-dominio">{{ c.dominio }}</div>
+              </div>
+              <button class="btn-icon-sm" onclick="deletarConcorrente({{ c.id }}, {{ projeto.id }}, '{{ c.nome|e }}')" title="Remover">🗑</button>
+            </div>
+          </th>
+          {% endfor %}
+          <th class="th-acoes">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kw in keywords %}
+        <tr class="conc-row" id="kw-row-{{ kw.id }}">
+          <td class="td-keyword">
+            <strong>{{ kw.termo }}</strong>
+          </td>
+          <td>
+            {% if kw.grupo %}
+            <span class="grupo-badge">{{ kw.grupo }}</span>
+            {% else %}
+            <span class="col-dim">—</span>
+            {% endif %}
+          </td>
+
+          {# Minha posição #}
+          <td class="td-pos meu-site">
+            {% if kw.minha_posicao %}
+            <span class="pos-badge pos-{{ 'top3' if kw.minha_posicao <= 3 else 'top10' if kw.minha_posicao <= 10 else 'top30' if kw.minha_posicao <= 30 else 'fora' }}">
+              #{{ kw.minha_posicao }}
+            </span>
+            {% else %}
+            <span class="pos-badge pos-null">—</span>
+            {% endif %}
+          </td>
+
+          {# Posições dos concorrentes #}
+          {% for c in concorrentes %}
+          {% set pos_data = matriz.get(kw.id, {}).get(c.id) %}
+          <td class="td-pos" id="pos-{{ c.id }}-{{ kw.id }}">
+            {% if pos_data and pos_data.posicao %}
+              {% set pos = pos_data.posicao %}
+              {% set minha = kw.minha_posicao %}
+              <div class="pos-comparativo">
+                <span class="pos-badge pos-{{ 'top3' if pos <= 3 else 'top10' if pos <= 10 else 'top30' if pos <= 30 else 'fora' }}">
+                  #{{ pos }}
+                </span>
+                {% if minha %}
+                  {% if pos < minha %}
+                  <span class="diff diff-perigo" title="Concorrente está à frente">▲{{ minha - pos }}</span>
+                  {% elif pos > minha %}
+                  <span class="diff diff-ok" title="Você está à frente">▼{{ pos - minha }}</span>
+                  {% else %}
+                  <span class="diff diff-eq">=</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+            {% else %}
+            <button class="btn-inserir" onclick="abrirModalPosicao({{ c.id }}, {{ kw.id }}, '{{ c.nome|e }}', '{{ kw.termo|e }}')">
+              + inserir
+            </button>
+            {% endif %}
+          </td>
+          {% endfor %}
+
+          <td class="td-acoes">
+            <button class="btn-icon" onclick="abrirModalPosicaoLote({{ kw.id }}, '{{ kw.termo|e }}')" title="Inserir posições">📍</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── LEGENDA ── #}
+  <div class="conc-legenda">
+    <span class="leg-item"><span class="pos-badge pos-top3">#1</span> Top 3</span>
+    <span class="leg-item"><span class="pos-badge pos-top10">#7</span> Top 10</span>
+    <span class="leg-item"><span class="pos-badge pos-top30">#20</span> Top 30</span>
+    <span class="leg-item"><span class="pos-badge pos-fora">#50</span> Fora do Top 30</span>
+    <span class="leg-item"><span class="diff diff-perigo">▲5</span> Concorrente à frente</span>
+    <span class="leg-item"><span class="diff diff-ok">▼5</span> Você à frente</span>
+  </div>
+  {% endif %}
+
+</div>
+
+{# ═══════════════════════════════════════════ #}
+{# MODAL — ADICIONAR CONCORRENTE               #}
+{# ═══════════════════════════════════════════ #}
+<div class="modal-overlay" id="modal-concorrente" onclick="fecharModal('modal-concorrente')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modal-conc-titulo">Adicionar Concorrente</h3>
+      <button class="modal-close" onclick="fecharModal('modal-concorrente')">×</button>
+    </div>
+    <form action="{{ url_for('concorrentes.salvar', projeto_id=projeto.id) }}" method="POST">
+      <input type="hidden" name="id" id="conc-id">
+      <div class="form-group">
+        <label>Domínio *</label>
+        <input type="text" name="dominio" id="conc-dominio"
+               placeholder="ex: concorrente.com.br"
+               class="form-control" required>
+        <small>Só o domínio, sem https:// ou www.</small>
+      </div>
+      <div class="form-group">
+        <label>Nome (apelido)</label>
+        <input type="text" name="nome" id="conc-nome"
+               placeholder="ex: Concorrente Principal"
+               class="form-control">
+        <small>Opcional. Se vazio, usa o domínio.</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="fecharModal('modal-concorrente')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════ #}
+{# MODAL — INSERIR POSIÇÃO DE 1 CONCORRENTE   #}
+{# ═══════════════════════════════════════════ #}
+<div class="modal-overlay" id="modal-posicao" onclick="fecharModal('modal-posicao')">
+  <div class="modal-box modal-small" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>📍 Inserir Posição</h3>
+      <button class="modal-close" onclick="fecharModal('modal-posicao')">×</button>
+    </div>
+    <div class="modal-info-row">
+      <div class="modal-info-item">
+        <div class="info-label">Concorrente</div>
+        <div class="info-valor" id="pos-conc-nome"></div>
+      </div>
+      <div class="modal-info-item">
+        <div class="info-label">Keyword</div>
+        <div class="info-valor" id="pos-kw-termo"></div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:1rem">
+      <label>Posição no Google</label>
+      <input type="number" id="input-pos-conc" min="1" max="200"
+             placeholder="ex: 5" class="form-control form-control-lg">
+    </div>
+    <div class="form-group">
+      <label>URL encontrada (opcional)</label>
+      <input type="url" id="input-url-conc"
+             placeholder="https://concorrente.com.br/pagina"
+             class="form-control">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-posicao')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPosicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════ #}
+{# MODAL — INSERIR POSIÇÃO EM LOTE (1 KEYWORD)#}
+{# ═══════════════════════════════════════════ #}
+<div class="modal-overlay" id="modal-lote" onclick="fecharModal('modal-lote')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>📍 Inserir Posições — <span id="lote-kw-termo"></span></h3>
+      <button class="modal-close" onclick="fecharModal('modal-lote')">×</button>
+    </div>
+    <div id="lote-campos"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-lote')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarLote()">Salvar todas</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Layout ── */
+.conc-page { padding: 1.5rem; max-width: 1400px; }
+
+.conc-header {
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;
+}
+.conc-header-left { display: flex; align-items: center; gap: .75rem; }
+.conc-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+.conc-projeto-badge {
+  background: var(--color-primary-subtle,#eff6ff);
+  color: var(--color-primary,#3b82f6);
+  padding: .2rem .7rem; border-radius: 999px;
+  font-size: .8rem; font-weight: 600;
+}
+
+/* ── Stats ── */
+.conc-stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.cstat-card {
+  background: var(--card-bg,#fff);
+  border: 1px solid var(--border-color,#e5e7eb);
+  border-radius: 10px; padding: .875rem 1.25rem; text-align: center;
+}
+.cstat-blue { border-color: #3b82f6; }
+.cstat-gray { border-color: #9ca3af; }
+.cstat-valor { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+.cstat-small { font-size: 1.4rem; }
+.cstat-label { font-size: .72rem; color: var(--text-muted,#6b7280); margin-top: .25rem; }
+.cstat-blue .cstat-valor { color: #3b82f6; }
+
+/* ── Tabela ── */
+.conc-table-wrap {
+  background: var(--card-bg,#fff);
+  border: 1px solid var(--border-color,#e5e7eb);
+  border-radius: 12px; overflow: hidden; overflow-x: auto;
+  margin-bottom: 1rem;
+}
+.conc-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.conc-table thead th {
+  background: var(--table-header-bg,#f8fafc);
+  padding: .75rem 1rem; text-align: center;
+  font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-muted,#6b7280);
+  border-bottom: 1px solid var(--border-color,#e5e7eb);
+  white-space: nowrap;
+}
+.th-keyword { text-align: left; min-width: 180px; }
+.th-grupo   { text-align: left; }
+.th-site    { min-width: 130px; }
+.th-acoes   { width: 60px; }
+.meu-site   { background: #eff6ff !important; }
+
+.site-header {
+  display: flex; align-items: center; gap: .4rem;
+  justify-content: center; flex-direction: column;
+}
+.site-icone  { font-size: 1rem; }
+.site-nome   { font-size: .8rem; font-weight: 700; }
+.site-dominio { font-size: .68rem; color: var(--text-muted,#9ca3af); }
+
+.conc-table tbody td {
+  padding: .7rem 1rem; text-align: center;
+  border-bottom: 1px solid var(--border-light,#f3f4f6);
+  vertical-align: middle;
+}
+.conc-table tbody tr:last-child td { border-bottom: none; }
+.conc-table tbody tr:hover { background: var(--row-hover,#f8fafc); }
+.td-keyword { text-align: left; }
+.td-pos     { min-width: 110px; }
+
+/* ── Badges posição ── */
+.pos-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 40px; padding: .2rem .5rem;
+  border-radius: 6px; font-weight: 700; font-size: .85rem;
+}
+.pos-top3  { background: #fef3c7; color: #d97706; }
+.pos-top10 { background: #d1fae5; color: #065f46; }
+.pos-top30 { background: #dbeafe; color: #1d4ed8; }
+.pos-fora  { background: #f3f4f6; color: #6b7280; }
+.pos-null  { background: transparent; color: #d1d5db; }
+
+/* ── Comparativo ── */
+.pos-comparativo { display: flex; align-items: center; justify-content: center; gap: .4rem; }
+.diff { font-size: .75rem; font-weight: 700; }
+.diff-perigo { color: #dc2626; }
+.diff-ok     { color: #059669; }
+.diff-eq     { color: #9ca3af; }
+
+/* ── Outros ── */
+.grupo-badge {
+  background: var(--color-primary-subtle,#eff6ff);
+  color: var(--color-primary,#3b82f6);
+  padding: .15rem .5rem; border-radius: 4px; font-size: .75rem;
+}
+.col-dim { color: var(--text-muted,#9ca3af); }
+
+.btn-inserir {
+  background: none; border: 1px dashed var(--border-color,#d1d5db);
+  border-radius: 6px; padding: .2rem .5rem;
+  font-size: .72rem; color: var(--text-muted,#9ca3af);
+  cursor: pointer; transition: all .15s;
+}
+.btn-inserir:hover {
+  border-color: var(--color-primary,#3b82f6);
+  color: var(--color-primary,#3b82f6);
+}
+
+.btn-icon-sm {
+  background: none; border: none; cursor: pointer;
+  font-size: .8rem; opacity: .5; padding: .1rem;
+}
+.btn-icon-sm:hover { opacity: 1; }
+
+.td-acoes { width: 50px; }
+.btn-icon {
+  background: none; border: none; cursor: pointer;
+  padding: .25rem; border-radius: 4px; font-size: .9rem; opacity: .7;
+}
+.btn-icon:hover { opacity: 1; background: var(--row-hover,#f3f4f6); }
+
+/* ── Legenda ── */
+.conc-legenda {
+  display: flex; flex-wrap: wrap; gap: 1rem;
+  font-size: .75rem; color: var(--text-muted,#6b7280);
+  padding: .75rem 0;
+}
+.leg-item { display: flex; align-items: center; gap: .35rem; }
+
+/* ── Empty ── */
+.conc-empty {
+  text-align: center; padding: 4rem 2rem;
+  color: var(--text-muted,#6b7280);
+}
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.conc-empty h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+
+/* ── Modals ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.ativo { display: flex; }
+.modal-box {
+  background: var(--card-bg,#fff); border-radius: 14px; padding: 1.5rem;
+  width: 100%; max-width: 500px; margin: 1rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+.modal-small { max-width: 380px; }
+.modal-header {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 1.25rem;
+}
+.modal-header h3 { margin: 0; font-size: 1rem; }
+.modal-close {
+  background: none; border: none; font-size: 1.3rem;
+  cursor: pointer; color: var(--text-muted,#9ca3af);
+}
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: .5rem;
+  margin-top: 1.5rem; padding-top: 1rem;
+  border-top: 1px solid var(--border-color,#e5e7eb);
+}
+.modal-info-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
+}
+.modal-info-item {
+  background: var(--table-header-bg,#f8fafc);
+  border-radius: 8px; padding: .6rem .75rem;
+}
+.info-label { font-size: .72rem; color: var(--text-muted,#9ca3af); margin-bottom: .2rem; }
+.info-valor { font-weight: 600; font-size: .875rem; }
+
+/* ── Forms ── */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .35rem; }
+.form-group small { color: var(--text-muted,#9ca3af); font-size: .75rem; }
+.form-control {
+  width: 100%; padding: .5rem .75rem;
+  border: 1px solid var(--border-color,#e5e7eb); border-radius: 8px;
+  font-size: .875rem; background: var(--input-bg,#fff);
+  color: var(--text-primary,#111); box-sizing: border-box;
+}
+.form-control:focus { outline: none; border-color: var(--color-primary,#3b82f6); }
+.form-control-lg { font-size: 1.5rem; font-weight: 700; text-align: center; padding: .75rem; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem 1rem; border-radius: 8px;
+  font-size: .875rem; font-weight: 600; cursor: pointer;
+  border: none; text-decoration: none; transition: all .15s;
+}
+.btn-primary { background: var(--color-primary,#3b82f6); color: #fff; }
+.btn-primary:hover { filter: brightness(.9); }
+.btn-ghost {
+  background: transparent; color: var(--text-secondary,#374151);
+  border: 1px solid var(--border-color,#e5e7eb);
+}
+.btn-ghost:hover { background: var(--row-hover,#f3f4f6); }
+
+/* ── Lote campos ── */
+.lote-campo {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .6rem 0; border-bottom: 1px solid var(--border-light,#f3f4f6);
+}
+.lote-campo:last-child { border-bottom: none; }
+.lote-nome { flex: 1; font-size: .875rem; font-weight: 500; }
+.lote-input {
+  width: 80px; padding: .35rem .5rem; text-align: center;
+  border: 1px solid var(--border-color,#e5e7eb); border-radius: 6px;
+  font-size: .875rem; font-weight: 700;
+}
+</style>
+
+<script>
+const PROJETO_ID = {{ projeto.id }};
+let posModalConcId = null;
+let posModalKwId   = null;
+let loteKwId       = null;
+
+// ── Modals ──
+function abrirModalConcorrente(id='', dominio='', nome='') {
+  document.getElementById('conc-id').value      = id;
+  document.getElementById('conc-dominio').value = dominio;
+  document.getElementById('conc-nome').value    = nome;
+  document.getElementById('modal-conc-titulo').textContent = id ? 'Editar Concorrente' : 'Adicionar Concorrente';
+  document.getElementById('modal-concorrente').classList.add('ativo');
+  setTimeout(() => document.getElementById('conc-dominio').focus(), 100);
+}
+
+function abrirModalPosicao(concId, kwId, concNome, kwTermo) {
+  posModalConcId = concId;
+  posModalKwId   = kwId;
+  document.getElementById('pos-conc-nome').textContent = concNome;
+  document.getElementById('pos-kw-termo').textContent  = kwTermo;
+  document.getElementById('input-pos-conc').value = '';
+  document.getElementById('input-url-conc').value = '';
+  document.getElementById('modal-posicao').classList.add('ativo');
+  setTimeout(() => document.getElementById('input-pos-conc').focus(), 100);
+}
+
+function abrirModalPosicaoLote(kwId, kwTermo) {
+  loteKwId = kwId;
+  document.getElementById('lote-kw-termo').textContent = kwTermo;
+
+  // Gerar campos para cada concorrente
+  const concorrentes = {{ concorrentes | tojson }};
+  const campos = concorrentes.map(c => `
+    <div class="lote-campo" data-conc-id="${c.id}">
+      <div class="lote-nome">⚔️ ${c.nome}<br><small style="color:#9ca3af">${c.dominio}</small></div>
+      <input type="number" class="lote-input" min="1" max="200"
+             placeholder="pos" id="lote-${c.id}">
+    </div>
+  `).join('');
+  document.getElementById('lote-campos').innerHTML = campos;
+  document.getElementById('modal-lote').classList.add('ativo');
+}
+
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('ativo');
+}
+
+// ── Salvar posição individual ──
+async function salvarPosicao() {
+  const posicao = document.getElementById('input-pos-conc').value;
+  const url     = document.getElementById('input-url-conc').value;
+  const btn     = document.querySelector('#modal-posicao .btn-primary');
+  btn.textContent = 'Salvando...';
+  btn.disabled = true;
+
+  const fd = new FormData();
+  fd.append('concorrente_id', posModalConcId);
+  fd.append('keyword_id',     posModalKwId);
+  if (posicao) fd.append('posicao', posicao);
+  if (url)     fd.append('url_ranqueada', url);
+
+  try {
+    const resp = await fetch(`/concorrentes/${PROJETO_ID}/rastrear`, { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (data.ok) {
+      // Atualizar célula na tabela
+      const cell = document.getElementById(`pos-${posModalConcId}-${posModalKwId}`);
+      if (cell && data.posicao) {
+        const cls = data.posicao <= 3 ? 'top3' : data.posicao <= 10 ? 'top10' : data.posicao <= 30 ? 'top30' : 'fora';
+        cell.innerHTML = `<div class="pos-comparativo"><span class="pos-badge pos-${cls}">#${data.posicao}</span></div>`;
+      } else if (cell) {
+        cell.innerHTML = `<span class="col-dim">—</span>`;
+      }
+      fecharModal('modal-posicao');
+      mostrarToast('Posição salva!', 'success');
+    }
+  } catch(e) {
+    mostrarToast('Erro ao salvar', 'error');
+  } finally {
+    btn.textContent = 'Salvar';
+    btn.disabled = false;
+  }
+}
+
+// ── Salvar posições em lote ──
+async function salvarLote() {
+  const concorrentes = {{ concorrentes | tojson }};
+  const btn = document.querySelector('#modal-lote .btn-primary');
+  btn.textContent = 'Salvando...';
+  btn.disabled = true;
+
+  let salvos = 0;
+  for (const c of concorrentes) {
+    const input = document.getElementById(`lote-${c.id}`);
+    if (!input || !input.value) continue;
+
+    const fd = new FormData();
+    fd.append('concorrente_id', c.id);
+    fd.append('keyword_id',     loteKwId);
+    fd.append('posicao',        input.value);
+
+    try {
+      const resp = await fetch(`/concorrentes/${PROJETO_ID}/rastrear`, { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data.ok) {
+        const cell = document.getElementById(`pos-${c.id}-${loteKwId}`);
+        if (cell && data.posicao) {
+          const cls = data.posicao <= 3 ? 'top3' : data.posicao <= 10 ? 'top10' : data.posicao <= 30 ? 'top30' : 'fora';
+          cell.innerHTML = `<div class="pos-comparativo"><span class="pos-badge pos-${cls}">#${data.posicao}</span></div>`;
+        }
+        salvos++;
+      }
+    } catch(e) {}
+  }
+
+  fecharModal('modal-lote');
+  mostrarToast(`${salvos} posição(ões) salva(s)!`, 'success');
+  btn.textContent = 'Salvar todas';
+  btn.disabled = false;
+}
+
+// ── Deletar concorrente ──
+async function deletarConcorrente(id, projetoId, nome) {
+  if (!confirm(`Remover "${nome}" e todos os rankings?`)) return;
+  const resp = await fetch(`/concorrentes/${projetoId}/deletar/${id}`, { method: 'POST' });
+  const data = await resp.json();
+  if (data.ok) {
+    mostrarToast('Concorrente removido.', 'success');
+    setTimeout(() => location.reload(), 800);
+  }
+}
+
+// ── Toast ──
+function mostrarToast(msg, tipo='success') {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999;
+    padding:.75rem 1.25rem; border-radius:10px; font-size:.875rem;
+    font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.15);
+    background:${tipo==='success'?'#10b981':'#ef4444'}; color:#fff;
+  `;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── Enter nos modals ──
+document.getElementById('input-pos-conc').addEventListener('keydown', e => {
+  if (e.key === 'Enter') salvarPosicao();
+});
+</script>
+{% endblock %}

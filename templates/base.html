@@ -37,6 +37,10 @@
        class="nav-item {% if 'auditoria' in (request.endpoint or '') %}active{% endif %}">
       <span class="nav-icon">🔍</span> Auditoria
     </a>
+    <a href="{{ url_for('concorrentes.index', projeto_id=projeto.id) }}"
+       class="nav-item {% if request.endpoint and request.endpoint.startswith('concorrentes') %}active{% endif %}">
+      <span class="nav-icon">⚔️</span> Concorrentes
+    </a>
 
     <!-- Social (quando módulo for ativado) -->
     {% if plano and plano.social_enabled %}
