@@ -4,6 +4,11 @@
 {% block content %}
 <div class="conc-page">
 
+  <div class="kw-tabs">
+    <a href="{{ url_for('concorrentes.index', projeto_id=projeto.id) }}" class="kw-tab kw-tab-ativo">⚔️ Concorrentes</a>
+    <a href="{{ url_for('concorrentes.logs', projeto_id=projeto.id) }}" class="kw-tab">📋 Log de Rastreamento</a>
+  </div>
+
   {# ── HEADER ── #}
   <div class="conc-header">
     <div class="conc-header-left">
@@ -262,6 +267,12 @@
 </div>
 
 <style>
+/* ── Tabs ── */
+.kw-tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color,#e5e7eb); }
+.kw-tab { padding: .6rem 1.25rem; font-size: .875rem; font-weight: 600; text-decoration: none; color: var(--text-muted,#6b7280); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+.kw-tab:hover { color: var(--color-primary,#3b82f6); }
+.kw-tab-ativo { color: var(--color-primary,#3b82f6); border-bottom-color: var(--color-primary,#3b82f6); }
+
 /* ── Layout ── */
 .conc-page { padding: 1.5rem; max-width: 1400px; }
 

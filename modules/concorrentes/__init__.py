@@ -419,3 +419,45 @@ def scraping_rastrear_todas(projeto_id):
         total_ok += 1
 
     return jsonify({"ok": True, "total": len(resultados), "sucesso": total_ok})
+
+
+@bp.route("/<int:projeto_id>/logs")
+@login_required
+def logs(projeto_id):
+    projeto = _get_projeto(projeto_id)
+    if not projeto:
+        flash("Projeto não encontrado.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    page     = int(request.args.get("p", 1))
+    per_page = 50
+    offset   = (page - 1) * per_page
+
+    total_row = db.query_one(
+        """SELECT COUNT(*) as total FROM concorrente_rankings cr
+           JOIN concorrentes c ON c.id = cr.concorrente_id
+           WHERE c.projeto_id=%s AND c.tenant_id=%s""",
+        (projeto_id, current_user.tenant_id)
+    )
+    total = total_row["total"] if total_row else 0
+
+    logs = db.query(
+        """SELECT cr.*, c.nome as conc_nome, c.dominio, k.termo
+           FROM concorrente_rankings cr
+           JOIN concorrentes c ON c.id = cr.concorrente_id
+           JOIN keywords k ON k.id = cr.keyword_id
+           WHERE c.projeto_id=%s AND c.tenant_id=%s
+           ORDER BY cr.datestamp_insert DESC
+           LIMIT %s OFFSET %s""",
+        (projeto_id, current_user.tenant_id, per_page, offset)
+    )
+
+    return render_template(
+        "concorrentes/logs.html",
+        projeto=projeto,
+        logs=logs,
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=max(1, -(-total // per_page))
+    )
