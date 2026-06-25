@@ -646,7 +646,7 @@ async function rastrearTodas() {
   btn.disabled = true;
 
   try {
-    const resp = await fetch('/concorrentes/' + PROJETO_ID + '/scraping/rastrear-todas', { method: 'POST' });
+    const resp = await fetch('/concorrentes/' + PROJETO_ID + '/gemini/rastrear-todas', { method: 'POST' });
     const data = await resp.json();
     if (data.ok) {
       mostrarToast('✅ ' + data.sucesso + '/' + data.total + ' keywords rastreadas!', 'success');

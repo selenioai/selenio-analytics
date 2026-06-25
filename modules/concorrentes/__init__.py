@@ -461,3 +461,70 @@ def logs(projeto_id):
         per_page=per_page,
         total_pages=max(1, -(-total // per_page))
     )
+
+
+@bp.route("/<int:projeto_id>/gemini/rastrear-todas", methods=["POST"])
+@login_required
+def gemini_rastrear_todas(projeto_id):
+    """Rastreia todas as keywords via Gemini + Google Search."""
+    from .gemini_provider import rastrear_projeto_gemini
+    import json as _json
+
+    projeto      = _get_projeto(projeto_id)
+    keywords     = _get_keywords(projeto_id)
+    concorrentes = _get_concorrentes(projeto_id)
+
+    if not projeto or not keywords or not concorrentes:
+        return jsonify({"ok": False, "erro": "Projeto, keywords ou concorrentes não encontrados"}), 400
+
+    meu_dominio = projeto.get("dominio", "").replace("https://","").replace("http://","").replace("www.","").split("/")[0].strip()
+    termos      = [kw["termo"] for kw in keywords]
+    dominios    = [c["dominio"] for c in concorrentes]
+    kw_map      = {kw["termo"]: kw["id"] for kw in keywords}
+    c_map       = {c["dominio"]: c["id"] for c in concorrentes}
+
+    resultados  = rastrear_projeto_gemini(
+        keywords=termos,
+        meu_dominio=meu_dominio,
+        dominios_concorrentes=dominios,
+        delay=5.0
+    )
+
+    total_ok = 0
+    erros    = []
+
+    for res in resultados:
+        if not res["ok"]:
+            erros.append(f"{res['keyword']}: {res.get('erro','')}")
+            continue
+
+        kw_id = kw_map.get(res["keyword"])
+
+        # Salvar meu site
+        if kw_id and res["meu_site"]["posicao"]:
+            db.execute(
+                """INSERT INTO keyword_posicoes
+                   (keyword_id, projeto_id, posicao, url_encontrada, fonte, raw_data)
+                   VALUES (%s,%s,%s,%s,'gemini','{}')""",
+                (kw_id, projeto_id, res["meu_site"]["posicao"], res["meu_site"]["url"])
+            )
+
+        # Salvar concorrentes
+        for dom, pos_data in res["concorrentes"].items():
+            c_id = c_map.get(dom)
+            if c_id and kw_id:
+                db.execute(
+                    """INSERT INTO concorrente_rankings
+                       (tenant_id, concorrente_id, keyword_id, posicao, url_ranqueada, data_coleta)
+                       VALUES (%s,%s,%s,%s,%s,CURRENT_DATE)""",
+                    (current_user.tenant_id, c_id, kw_id, pos_data.get("posicao"), pos_data.get("url"))
+                )
+
+        total_ok += 1
+
+    return jsonify({
+        "ok":      True,
+        "total":   len(resultados),
+        "sucesso": total_ok,
+        "erros":   erros
+    })
