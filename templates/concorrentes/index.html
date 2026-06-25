@@ -11,6 +11,7 @@
       <span class="conc-projeto-badge">{{ projeto.nome }}</span>
     </div>
     <div class="conc-header-actions">
+      <button type="button" class="btn btn-secondary" onclick="rastrearTodas()" id="btn-scraping">🔍 Rastrear todas</button>
       <button class="btn btn-primary" onclick="abrirModalConcorrente()">
         + Adicionar Concorrente
       </button>
@@ -152,6 +153,7 @@
 
           <td class="td-acoes">
             <button class="btn-icon" onclick="abrirModalPosicaoLote({{ kw.id }}, '{{ kw.termo|e }}')" title="Inserir posições">📍</button>
+            <button class="btn-icon btn-rastrear-kw" onclick="rastrearKeyword({{ kw.id }})" title="Rastrear via scraping">🔍</button>
           </td>
         </tr>
         {% endfor %}
@@ -457,6 +459,8 @@
 }
 .btn-primary { background: var(--color-primary,#3b82f6); color: #fff; }
 .btn-primary:hover { filter: brightness(.9); }
+.btn-secondary { background: var(--card-bg,#fff); color: var(--text-secondary,#374151); border: 1px solid var(--border-color,#e5e7eb); }
+.btn-secondary:hover { background: var(--row-hover,#f3f4f6); }
 .btn-ghost {
   background: transparent; color: var(--text-secondary,#374151);
   border: 1px solid var(--border-color,#e5e7eb);
@@ -622,6 +626,53 @@ function mostrarToast(msg, tipo='success') {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+
+// ── Rastrear todas via scraping ──
+async function rastrearTodas() {
+  const btn = document.getElementById('btn-scraping');
+  btn.textContent = '⏳ Rastreando...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch('/concorrentes/' + PROJETO_ID + '/scraping/rastrear-todas', { method: 'POST' });
+    const data = await resp.json();
+    if (data.ok) {
+      mostrarToast('✅ ' + data.sucesso + '/' + data.total + ' keywords rastreadas!', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      mostrarToast('❌ ' + (data.erro || 'Erro ao rastrear'), 'error');
+    }
+  } catch(e) {
+    mostrarToast('❌ Erro de conexão', 'error');
+  } finally {
+    btn.textContent = '🔍 Rastrear todas';
+    btn.disabled = false;
+  }
+}
+
+// ── Rastrear 1 keyword via scraping ──
+async function rastrearKeyword(kwId) {
+  const btn = document.querySelector('#kw-row-' + kwId + ' .btn-rastrear-kw');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  const fd = new FormData();
+  fd.append('keyword_id', kwId);
+
+  try {
+    const resp = await fetch('/concorrentes/' + PROJETO_ID + '/scraping/rastrear-keyword', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (data.ok) {
+      mostrarToast('✅ ' + data.keyword + ' rastreada!', 'success');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      mostrarToast('❌ ' + (data.erro || 'Erro'), 'error');
+    }
+  } catch(e) {
+    mostrarToast('❌ Erro de conexão', 'error');
+  } finally {
+    if (btn) { btn.textContent = '🔍'; btn.disabled = false; }
+  }
 }
 
 // ── Enter nos modals ──

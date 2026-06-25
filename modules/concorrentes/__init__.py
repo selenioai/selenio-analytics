@@ -301,3 +301,121 @@ def historico(projeto_id, c_id):
         concorrente=concorrente,
         rankings=rankings
     )
+
+# ─── SCRAPING ROUTES ───────────────────────────────────────────
+
+@bp.route("/<int:projeto_id>/scraping/status")
+@login_required
+def scraping_status(projeto_id):
+    import os
+    modo = os.getenv("SCRAPING_MODO", "direto")
+    return jsonify({
+        "modo": modo,
+        "modos": {
+            "direto":     {"configurado": True,                          "custo": "Grátis"},
+            "scraperapi": {"configurado": bool(os.getenv("SCRAPERAPI_KEY")), "custo": "$0.001/req"},
+            "brightdata": {"configurado": bool(os.getenv("BRIGHTDATA_USER")), "custo": "Variável"}
+        }
+    })
+
+
+@bp.route("/<int:projeto_id>/scraping/rastrear-keyword", methods=["POST"])
+@login_required
+def scraping_rastrear_keyword(projeto_id):
+    from .scraper import rastrear_posicoes
+    projeto = _get_projeto(projeto_id)
+    if not projeto:
+        return jsonify({"ok": False}), 403
+
+    keyword_id = request.form.get("keyword_id")
+    keyword = db.query_one(
+        "SELECT * FROM keywords WHERE id=%s AND projeto_id=%s AND d_e_l_e_t=0",
+        (keyword_id, projeto_id)
+    )
+    if not keyword:
+        return jsonify({"ok": False, "erro": "Keyword não encontrada"}), 404
+
+    concorrentes = _get_concorrentes(projeto_id)
+    meu_dominio  = projeto.get("url", "").replace("https://","").replace("http://","").split("/")[0]
+    dominios     = [c["dominio"] for c in concorrentes]
+
+    resultado = rastrear_posicoes(
+        keyword=keyword["termo"],
+        meu_dominio=meu_dominio,
+        dominios_concorrentes=dominios,
+        pais=keyword.get("pais", "br")
+    )
+
+    if not resultado["ok"]:
+        return jsonify({"ok": False, "erro": resultado["erro"]}), 500
+
+    if resultado["meu_site"]["posicao"]:
+        db.execute(
+            """INSERT INTO keyword_posicoes
+               (keyword_id, projeto_id, posicao, url_encontrada, fonte, raw_data)
+               VALUES (%s,%s,%s,%s,'scraping','{}')""",
+            (keyword["id"], projeto_id, resultado["meu_site"]["posicao"], resultado["meu_site"]["url"])
+        )
+
+    salvos = {}
+    for c in concorrentes:
+        pos_data = resultado["concorrentes"].get(c["dominio"], {})
+        db.execute(
+            """INSERT INTO concorrente_rankings
+               (tenant_id, concorrente_id, keyword_id, posicao, url_ranqueada, data_coleta)
+               VALUES (%s,%s,%s,%s,%s,CURRENT_DATE)""",
+            (current_user.tenant_id, c["id"], keyword["id"], pos_data.get("posicao"), pos_data.get("url"))
+        )
+        salvos[c["dominio"]] = pos_data
+
+    return jsonify({
+        "ok": True, "keyword": keyword["termo"],
+        "meu_site": resultado["meu_site"],
+        "concorrentes": salvos,
+        "total": len(resultado["resultados"])
+    })
+
+
+@bp.route("/<int:projeto_id>/scraping/rastrear-todas", methods=["POST"])
+@login_required
+def scraping_rastrear_todas(projeto_id):
+    from .scraper import rastrear_projeto
+    projeto      = _get_projeto(projeto_id)
+    keywords     = _get_keywords(projeto_id)
+    concorrentes = _get_concorrentes(projeto_id)
+
+    if not projeto or not keywords or not concorrentes:
+        return jsonify({"ok": False, "erro": "Projeto, keywords ou concorrentes não encontrados"}), 400
+
+    meu_dominio = projeto.get("url","").replace("https://","").replace("http://","").split("/")[0]
+    termos  = [kw["termo"] for kw in keywords]
+    dominios = [c["dominio"] for c in concorrentes]
+    kw_map  = {kw["termo"]: kw["id"] for kw in keywords}
+    c_map   = {c["dominio"]: c["id"] for c in concorrentes}
+
+    resultados  = rastrear_projeto(keywords=termos, meu_dominio=meu_dominio, dominios_concorrentes=dominios)
+    total_ok = 0
+
+    for res in resultados:
+        if not res["ok"]:
+            continue
+        kw_id = kw_map.get(res["keyword"])
+        if kw_id and res["meu_site"]["posicao"]:
+            db.execute(
+                """INSERT INTO keyword_posicoes
+                   (keyword_id, projeto_id, posicao, url_encontrada, fonte, raw_data)
+                   VALUES (%s,%s,%s,%s,'scraping','{}')""",
+                (kw_id, projeto_id, res["meu_site"]["posicao"], res["meu_site"]["url"])
+            )
+        for dom, pos_data in res["concorrentes"].items():
+            c_id = c_map.get(dom)
+            if c_id and kw_id:
+                db.execute(
+                    """INSERT INTO concorrente_rankings
+                       (tenant_id, concorrente_id, keyword_id, posicao, url_ranqueada, data_coleta)
+                       VALUES (%s,%s,%s,%s,%s,CURRENT_DATE)""",
+                    (current_user.tenant_id, c_id, kw_id, pos_data.get("posicao"), pos_data.get("url"))
+                )
+        total_ok += 1
+
+    return jsonify({"ok": True, "total": len(resultados), "sucesso": total_ok})
