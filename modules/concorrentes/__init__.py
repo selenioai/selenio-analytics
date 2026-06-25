@@ -336,7 +336,7 @@ def scraping_rastrear_keyword(projeto_id):
         return jsonify({"ok": False, "erro": "Keyword não encontrada"}), 404
 
     concorrentes = _get_concorrentes(projeto_id)
-    meu_dominio  = projeto.get("url", "").replace("https://","").replace("http://","").split("/")[0]
+    meu_dominio  = projeto.get("dominio", "").replace("https://","").replace("http://","").replace("www.","").split("/")[0].strip()
     dominios     = [c["dominio"] for c in concorrentes]
 
     resultado = rastrear_posicoes(
@@ -387,7 +387,7 @@ def scraping_rastrear_todas(projeto_id):
     if not projeto or not keywords or not concorrentes:
         return jsonify({"ok": False, "erro": "Projeto, keywords ou concorrentes não encontrados"}), 400
 
-    meu_dominio = projeto.get("url","").replace("https://","").replace("http://","").split("/")[0]
+    meu_dominio = projeto.get("dominio", "").replace("https://","").replace("http://","").replace("www.","").split("/")[0].strip()
     termos  = [kw["termo"] for kw in keywords]
     dominios = [c["dominio"] for c in concorrentes]
     kw_map  = {kw["termo"]: kw["id"] for kw in keywords}

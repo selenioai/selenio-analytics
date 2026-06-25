@@ -246,6 +246,10 @@ def _parsear_resultados(html: str, num_resultados: int = 50) -> list:
         })
         posicao += 1
 
+    print(f"[Scraper] Encontrados {len(resultados)} resultados orgânicos")
+    if not resultados:
+        # Debug: salvar primeiros 2000 chars do HTML
+        print(f"[Scraper] HTML snippet: {soup.get_text()[:500]}")
     return resultados
 
 
@@ -383,6 +387,10 @@ def rastrear_projeto(
             print(f"[Scraper] Pausa de {pausa:.0f}s após 10 buscas...")
             time.sleep(pausa)
 
+    print(f"[Scraper] Encontrados {len(resultados)} resultados orgânicos")
+    if not resultados:
+        # Debug: salvar primeiros 2000 chars do HTML
+        print(f"[Scraper] HTML snippet: {soup.get_text()[:500]}")
     return resultados
 
 
