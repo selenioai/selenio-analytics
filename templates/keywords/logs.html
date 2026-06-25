@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Log de Sincronismo — {{ projeto.nome }}{% endblock %}
+
+{% block content %}
+<div class="log-page">
+
+  <div class="kw-tabs">
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}" class="kw-tab">🔑 Keywords</a>
+    <a href="{{ url_for('keywords.logs', projeto_id=projeto.id) }}" class="kw-tab kw-tab-ativo">📋 Log de Sincronismo</a>
+  </div>
+
+  <div class="log-header">
+    <div>
+      <h1 class="log-title">📋 Log de Sincronismo</h1>
+      <span class="log-projeto-badge">{{ projeto.nome }}</span>
+    </div>
+    <div class="log-total-badge">{{ total }} registro{{ 's' if total != 1 else '' }}</div>
+  </div>
+
+  {% if logs %}
+  <div class="log-table-wrap">
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Data / Hora</th>
+          <th>Keyword</th>
+          <th>Grupo</th>
+          <th class="col-center">Posição</th>
+          <th class="col-center">Volume</th>
+          <th class="col-center">KD</th>
+          <th class="col-center">CPC</th>
+          <th class="col-center">Fonte</th>
+          <th>URL Encontrada</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="col-date">
+            <div class="log-data">{{ log.rastreado_em.strftime('%d/%m/%Y') }}</div>
+            <div class="log-hora">{{ log.rastreado_em.strftime('%H:%M:%S') }}</div>
+          </td>
+          <td class="col-termo"><strong>{{ log.termo }}</strong></td>
+          <td>
+            {% if log.grupo %}<span class="grupo-badge">{{ log.grupo }}</span>
+            {% else %}<span class="col-dim">—</span>{% endif %}
+          </td>
+          <td class="col-center">
+            {% if log.posicao %}
+            <span class="posicao-badge posicao-{{ 'top3' if log.posicao <= 3 else 'top10' if log.posicao <= 10 else 'top30' if log.posicao <= 30 else 'fora' }}">#{{ log.posicao }}</span>
+            {% else %}<span class="col-dim">—</span>{% endif %}
+          </td>
+          <td class="col-center col-dim">{{ log.volume_busca or '—' }}</td>
+          <td class="col-center">
+            {% if log.dificuldade is not none %}
+            <span class="kd-badge kd-{{ 'easy' if log.dificuldade<=30 else 'medium' if log.dificuldade<=60 else 'hard' }}">{{ log.dificuldade }}</span>
+            {% else %}<span class="col-dim">—</span>{% endif %}
+          </td>
+          <td class="col-center col-dim">{% if log.cpc %}R$ {{ '%.2f'|format(log.cpc) }}{% else %}—{% endif %}</td>
+          <td class="col-center"><span class="fonte-badge fonte-{{ log.fonte }}">{{ log.fonte }}</span></td>
+          <td class="col-url">
+            {% if log.url_encontrada %}
+            <a href="{{ log.url_encontrada }}" target="_blank" class="url-link">{{ log.url_encontrada|replace('https://','') |replace('http://','') |truncate(40) }}</a>
+            {% else %}<span class="col-dim">—</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="log-pagination">
+    {% if page > 1 %}<a href="{{ url_for('keywords.logs', projeto_id=projeto.id, p=page-1) }}" class="page-btn">← Anterior</a>{% endif %}
+    <span class="page-info">Página {{ page }} de {{ total_pages }} ({{ total }} registros)</span>
+    {% if page < total_pages %}<a href="{{ url_for('keywords.logs', projeto_id=projeto.id, p=page+1) }}" class="page-btn">Próxima →</a>{% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="log-empty">
+    <div class="empty-icon">📋</div>
+    <h3>Nenhum registro de sincronismo</h3>
+    <p>Os logs aparecem aqui após a primeira sincronização.</p>
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}" class="btn btn-primary">← Voltar para Keywords</a>
+  </div>
+  {% endif %}
+
+</div>
+
+<style>
+.log-page { padding: 1.5rem; max-width: 1400px; }
+.kw-tabs { display: flex; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border-color,#e5e7eb); }
+.kw-tab { padding: .6rem 1.25rem; font-size: .875rem; font-weight: 600; text-decoration: none; color: var(--text-muted,#6b7280); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+.kw-tab:hover { color: var(--color-primary,#3b82f6); }
+.kw-tab-ativo { color: var(--color-primary,#3b82f6); border-bottom-color: var(--color-primary,#3b82f6); }
+.log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem; }
+.log-title { font-size: 1.4rem; font-weight: 700; margin: 0 0 .25rem; }
+.log-projeto-badge { background: var(--color-primary-subtle,#eff6ff); color: var(--color-primary,#3b82f6); padding: .2rem .7rem; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+.log-total-badge { background: var(--table-header-bg,#f8fafc); border: 1px solid var(--border-color,#e5e7eb); padding: .4rem .9rem; border-radius: 8px; font-size: .8rem; font-weight: 600; color: var(--text-muted,#6b7280); }
+.log-table-wrap { background: var(--card-bg,#fff); border: 1px solid var(--border-color,#e5e7eb); border-radius: 12px; overflow: hidden; overflow-x: auto; }
+.log-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.log-table thead th { background: var(--table-header-bg,#f8fafc); padding: .7rem 1rem; text-align: left; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted,#6b7280); border-bottom: 1px solid var(--border-color,#e5e7eb); white-space: nowrap; }
+.log-table tbody td { padding: .65rem 1rem; border-bottom: 1px solid var(--border-light,#f3f4f6); vertical-align: middle; }
+.log-table tbody tr:last-child td { border-bottom: none; }
+.log-table tbody tr:hover { background: var(--row-hover,#f8fafc); }
+.col-center { text-align: center; }
+.col-dim { color: var(--text-muted,#9ca3af); }
+.col-date { white-space: nowrap; }
+.col-termo { min-width: 180px; }
+.col-url { max-width: 220px; }
+.log-data { font-size: .8rem; font-weight: 600; }
+.log-hora { font-size: .72rem; color: var(--text-muted,#9ca3af); }
+.posicao-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 42px; padding: .2rem .5rem; border-radius: 6px; font-weight: 700; font-size: .85rem; }
+.posicao-top3 { background: #fef3c7; color: #d97706; }
+.posicao-top10 { background: #d1fae5; color: #065f46; }
+.posicao-top30 { background: #dbeafe; color: #1d4ed8; }
+.posicao-fora { background: #f3f4f6; color: #6b7280; }
+.kd-badge { display: inline-block; padding: .15rem .5rem; border-radius: 4px; font-size: .75rem; font-weight: 700; }
+.kd-easy { background: #d1fae5; color: #065f46; }
+.kd-medium { background: #fef3c7; color: #92400e; }
+.kd-hard { background: #fee2e2; color: #991b1b; }
+.grupo-badge { background: var(--color-primary-subtle,#eff6ff); color: var(--color-primary,#3b82f6); padding: .15rem .5rem; border-radius: 4px; font-size: .75rem; }
+.fonte-badge { display: inline-block; padding: .15rem .5rem; border-radius: 4px; font-size: .72rem; font-weight: 600; background: var(--table-header-bg,#f3f4f6); color: var(--text-muted,#6b7280); }
+.fonte-gsc { background: #fef3c7; color: #d97706; }
+.fonte-dataforseo { background: #ede9fe; color: #6d28d9; }
+.fonte-scraping { background: #dbeafe; color: #1d4ed8; }
+.url-link { color: var(--text-muted,#6b7280); font-size: .78rem; text-decoration: none; white-space: nowrap; }
+.url-link:hover { text-decoration: underline; }
+.log-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem; }
+.page-btn { padding: .4rem .9rem; border-radius: 8px; border: 1px solid var(--border-color,#e5e7eb); background: var(--card-bg,#fff); font-size: .875rem; text-decoration: none; color: var(--text-secondary,#374151); font-weight: 600; }
+.page-btn:hover { background: var(--row-hover,#f3f4f6); }
+.page-info { font-size: .8rem; color: var(--text-muted,#6b7280); }
+.log-empty { text-align: center; padding: 4rem 2rem; color: var(--text-muted,#6b7280); }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.log-empty h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+.btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; border-radius: 8px; font-size: .875rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+.btn-primary { background: var(--color-primary,#3b82f6); color: #fff; }
+</style>
+{% endblock %}

@@ -4,6 +4,14 @@
 {% block content %}
 <div class="kw-page">
 
+  {# ── Tabs ── #}
+  <div class="kw-tabs">
+    <a href="{{ url_for('keywords.index', projeto_id=projeto.id) }}"
+       class="kw-tab kw-tab-ativo">🔑 Keywords</a>
+    <a href="{{ url_for('keywords.logs', projeto_id=projeto.id) }}"
+       class="kw-tab">📋 Log de Sincronismo</a>
+  </div>
+
   {# ── HEADER ── #}
   <div class="kw-header">
     <div class="kw-header-left">
@@ -15,6 +23,7 @@
          class="btn btn-ghost" title="Configurar fonte de rastreamento">
         ⚙️ Fonte: <strong>{{ providers_info[config.fonte].nome }}</strong>
       </a>
+      <button type="button" class="btn btn-secondary" onclick="sincronizarTodas()" id="btn-sync-todas">🔄 Sincronizar todas</button>
       <button class="btn btn-primary" onclick="abrirModalKeyword()">
         + Adicionar Keyword
       </button>
@@ -66,7 +75,7 @@
 
   {# ── FILTROS ── #}
   <div class="kw-filtros">
-    <input type="text" id="filtro-busca" placeholder="🔍 Filtrar keyword..."
+    <input type="text" id="filtro-busca" placeholder="🔍 Buscar keyword..."
            class="kw-search" oninput="filtrarTabela()">
     <select id="filtro-grupo" class="kw-select" onchange="filtrarTabela()">
       <option value="">Todos os grupos</option>
@@ -315,6 +324,23 @@
 {# CSS                                         #}
 {# ═══════════════════════════════════════════ #}
 <style>
+/* ── Tabs ── */
+.kw-tabs {
+  display: flex; gap: 0; margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border-color,#e5e7eb);
+}
+.kw-tab {
+  padding: .6rem 1.25rem; font-size: .875rem; font-weight: 600;
+  text-decoration: none; color: var(--text-muted,#6b7280);
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: all .15s;
+}
+.kw-tab:hover { color: var(--color-primary,#3b82f6); }
+.kw-tab-ativo {
+  color: var(--color-primary,#3b82f6);
+  border-bottom-color: var(--color-primary,#3b82f6);
+}
+
 /* ── Layout ── */
 .kw-page { padding: 1.5rem; max-width: 1400px; }
 
@@ -706,6 +732,29 @@ function mostrarToast(msg, tipo='success') {
   `;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3000);
+}
+
+// ── Sincronizar todas via GSC ──
+async function sincronizarTodas() {
+  const btn = document.getElementById('btn-sync-todas');
+  btn.textContent = '⏳ Sincronizando...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch('/keywords//gsc/sincronizar', { method: 'POST' });
+    const data = await resp.json();
+    if (data.ok) {
+      mostrarToast('✅ ' + data.total + ' keywords sincronizadas!', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      mostrarToast('❌ ' + (data.erro || 'Erro ao sincronizar'), 'error');
+    }
+  } catch(e) {
+    mostrarToast('❌ Erro de conexão', 'error');
+  } finally {
+    btn.textContent = '🔄 Sincronizar todas';
+    btn.disabled = false;
+  }
 }
 
 // ── Enter no modal de posição ──

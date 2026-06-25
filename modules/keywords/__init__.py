@@ -540,3 +540,41 @@ def ler_alerta(projeto_id, alerta_id):
         (alerta_id, projeto_id)
     )
     return jsonify({"ok": True})
+
+@bp.route("/<int:projeto_id>/logs")
+@login_required
+def logs(projeto_id):
+    projeto = _get_projeto(projeto_id)
+    if not projeto:
+        flash("Projeto não encontrado.", "error")
+        return redirect(url_for("dashboard.index"))
+
+    page     = int(request.args.get("p", 1))
+    per_page = 50
+    offset   = (page - 1) * per_page
+
+    total_row = db.query_one(
+        "SELECT COUNT(*) as total FROM keyword_posicoes WHERE projeto_id=%s",
+        (projeto_id,)
+    )
+    total = total_row["total"] if total_row else 0
+
+    logs = db.query(
+        """SELECT kp.*, k.termo, k.grupo
+           FROM keyword_posicoes kp
+           JOIN keywords k ON k.id = kp.keyword_id
+           WHERE kp.projeto_id=%s
+           ORDER BY kp.rastreado_em DESC
+           LIMIT %s OFFSET %s""",
+        (projeto_id, per_page, offset)
+    )
+
+    return render_template(
+        "keywords/logs.html",
+        projeto=projeto,
+        logs=logs,
+        total=total,
+        page=page,
+        per_page=per_page,
+        total_pages=max(1, -(-total // per_page))
+    )
